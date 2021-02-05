@@ -108,9 +108,6 @@ mod tests {
         }"#;
 
         let config = parse_from_str(config_json);
-        match config {
-            Err(e) => assert!(false, format!("{:#?}", e)),
-            _ => (),
-        };
+        assert!(config.is_ok());
     }
 }
