@@ -1,0 +1,31 @@
+{
+    "logging": {
+        "level": "DEBUG"
+    },
+    "files": {
+        "alwaysOn": "/etc/home-monitor/alwayson"
+    },
+    "network": {
+        "interface": "eth0",
+        "ping": {
+            "interval": 6,
+            "timeout": 2
+        }
+    },
+    "server": {
+        "name": "My Server",
+        "mac": "aa:bb:cc:dd:ee:ff",
+        "ip": "192.168.1.1",
+        "username": "foo",
+        "password": "bar",
+        "timeout": 60
+    },
+    "machines": [
+        {
+            "name": "My Machine",
+            "mac": "ff:ee:dd:cc:bb:aa",
+            "ip": "192.168.1.2",
+            "timeout": 300
+        }
+    ]
+}

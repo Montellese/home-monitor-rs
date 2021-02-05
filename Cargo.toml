@@ -1,0 +1,13 @@
+[package]
+name = "home-monitor-rs"
+version = "0.1.0"
+authors = ["Sascha Montellese <sascha.montellese@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+log = "0.4.14"
+serde = { version = "1.0.123", features = ["derive"] }
+serde_json = "1.0.61"
+simplelog = { version = "0.9.0", default-features = false }
