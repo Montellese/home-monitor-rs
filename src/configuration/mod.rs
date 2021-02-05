@@ -63,12 +63,9 @@ pub fn parse_from_file<P: AsRef<Path>>(path: P) -> Result<Configuration, Box<dyn
 }
 
 #[allow(dead_code)]
-pub fn parse_from_str(string: &str) -> Result<Configuration, Box<dyn Error>> {
+pub fn parse_from_str(s: &str) -> serde_json::Result<Configuration> {
     // Read the JSON contents of the string as an instance of `Configuration`.
-    let config = serde_json::from_str(string)?;
-
-    // Return the `Configuration`.
-    Ok(config)
+    serde_json::from_str(s)
 }
 
 #[cfg(test)]
