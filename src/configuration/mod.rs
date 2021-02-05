@@ -6,7 +6,6 @@ use std::io::BufReader;
 use std::path::Path;
 
 pub mod files;
-pub mod logging;
 pub mod machine;
 pub mod network;
 
@@ -15,38 +14,10 @@ pub const LOCATION: &'static str = "/etc/home-monitor/home-monitor.json";
 #[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Configuration {
-    logging: logging::Logging,
-    files: files::Files,
-    network: network::Network,
-    server: machine::Server,
-    machines: Vec<machine::Machine>,
-}
-
-impl Configuration {
-    #[allow(dead_code)]
-    pub fn logging(&self) -> &logging::Logging {
-        &self.logging
-    }
-
-    #[allow(dead_code)]
-    pub fn files(&self) -> &files::Files {
-        &self.files
-    }
-
-    #[allow(dead_code)]
-    pub fn network(&self) -> &network::Network {
-        &self.network
-    }
-
-    #[allow(dead_code)]
-    pub fn server(&self) -> &machine::Server {
-        &self.server
-    }
-
-    #[allow(dead_code)]
-    pub fn machines(&self) -> &Vec<machine::Machine> {
-        &self.machines
-    }
+    pub files: files::Files,
+    pub network: network::Network,
+    pub server: machine::Server,
+    pub machines: Vec<machine::Machine>,
 }
 
 #[allow(dead_code)]
@@ -76,9 +47,6 @@ mod tests {
     #[test]
     fn test_parse_from_str() {
         let config_json = r#"{
-            "logging": {
-                "level": "DEBUG"
-            },
             "files": {
                 "alwaysOn": "/etc/home-monitor/alwayson"
             },

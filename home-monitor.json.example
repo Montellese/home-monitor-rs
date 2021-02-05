@@ -1,7 +1,4 @@
 {
-    "logging": {
-        "level": "DEBUG"
-    },
     "files": {
         "alwaysOn": "/etc/home-monitor/alwayson"
     },
