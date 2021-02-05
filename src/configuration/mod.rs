@@ -18,7 +18,7 @@ pub struct Configuration {
     logging: logging::Logging,
     files: files::Files,
     network: network::Network,
-    server: machine::Machine,
+    server: machine::Server,
     machines: Vec<machine::Machine>,
 }
 
@@ -39,7 +39,7 @@ impl Configuration {
     }
 
     #[allow(dead_code)]
-    pub fn server(&self) -> &machine::Machine {
+    pub fn server(&self) -> &machine::Server {
         &self.server
     }
 
