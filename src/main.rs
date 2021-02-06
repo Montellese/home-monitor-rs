@@ -85,7 +85,7 @@ fn main() {
         }
     } else if args.shutdown {
         info!("shutting down {}...", server.machine.name);
-        match networking::shutdown(&server) {
+        match networking::shutdown::shutdown(&server) {
             Err(e)=> {
                 error!("failed to shut down {}: {}", server.machine.name, e);
                 std::process::exit(exitcode::UNAVAILABLE);
