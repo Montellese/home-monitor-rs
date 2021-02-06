@@ -126,6 +126,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "hex"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "805026a5d0141ffc30abb3be3173848ad46a1b1664fe632428479619a3644d77"
+
+[[package]]
 name = "home-monitor-rs"
 version = "0.1.0"
 dependencies = [
@@ -136,6 +142,7 @@ dependencies = [
  "serde",
  "serde_json",
  "simplelog",
+ "wakey",
 ]
 
 [[package]]
@@ -590,6 +597,15 @@ name = "version_check"
 version = "0.9.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b5a972e5669d67ba988ce3dc826706fb0a8b01471c088cb0b6110b805cc36aed"
+
+[[package]]
+name = "wakey"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c1d2190efbeecc9bab150d274f388e874aab8271cfa211f9520dae16deeb7130"
+dependencies = [
+ "hex",
+]
 
 [[package]]
 name = "wasi"

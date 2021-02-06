@@ -1,5 +1,7 @@
 use super::configuration::machine::{Machine, Server};
 
+use log::debug;
+
 use pnet::datalink::{interfaces, NetworkInterface};
 
 use std::fmt;
@@ -35,9 +37,10 @@ impl Networking {
     }
 }
 
-pub fn wakeup(machine: &Machine) -> Result<bool, NetworkingError> {
-    // TODO(Montellese)
-    unimplemented!();
+pub fn wakeup(machine: &Machine) -> std::io::Result<()> {
+    debug!("sending wake-on-lan request to {} [{}]", machine.name, machine.mac);
+    let wol = wakey::WolPacket::from_string(&machine.mac, ':');
+    wol.send_magic()
 }
 
 pub fn shutdown(server: &Server) -> Result<bool, NetworkingError> {

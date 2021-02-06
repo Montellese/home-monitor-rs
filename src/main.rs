@@ -74,8 +74,8 @@ fn main() {
     if args.wakeup {
         info!("waking up {}...", server.machine.name);
         match networking::wakeup(&server.machine) {
-            Err(e)=> {
-                error!("failed to wake up {}: {}", server.machine.name, e);
+            Err(_)=> {
+                error!("failed to wake up {}", server.machine.name);
                 std::process::exit(exitcode::UNAVAILABLE);
             },
             Ok(_) => {
