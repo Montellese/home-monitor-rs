@@ -52,7 +52,7 @@ fn main() {
     let config = config_result.unwrap();
 
     // create the network
-    let network = match networking::Networking::create(&config.network.interface) {
+    let network_interface = match networking::get_network_interface(&config.network.interface) {
         Err(e) => {
             error!("{}", e);
             std::process::exit(exitcode::CONFIG);
@@ -61,8 +61,8 @@ fn main() {
     };
 
     // log the details of the configured network interface
-    info!("network: [{}] {}", network.interface.name, network.interface.mac.unwrap());
-    for ip in network.interface.ips.iter() {
+    info!("network: [{}] {}", network_interface.name, network_interface.mac.unwrap());
+    for ip in network_interface.ips.iter() {
         info!("  {}", ip);
     }
 

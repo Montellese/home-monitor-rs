@@ -16,25 +16,15 @@ impl fmt::Display for NetworkingError {
     }
 }
 
-pub struct Networking {
-    pub interface: NetworkInterface,
-}
+pub fn get_network_interface(interface_name: &str) -> Result<NetworkInterface, NetworkingError> {
+    // get all network interfaces
+    let ifaces = interfaces();
 
-impl Networking {
-    pub fn create(interface_name: &str) -> Result<Networking, NetworkingError> {
-        // get all network interfaces
-        let ifaces = interfaces();
-
-        // try to find the interface matching the given name
-        let iface = ifaces.into_iter().find(|iface| iface.name == interface_name);
-        match iface {
-            Some(iface) => {
-                Ok(Networking {
-                    interface: iface,
-                })
-            },
-            None => Err(NetworkingError(format!("unknown network interface: {}", interface_name)))
-        }
+    // try to find the interface matching the given name
+    let iface = ifaces.into_iter().find(|iface| iface.name == interface_name);
+    return match iface {
+        Some(iface) => Ok(iface),
+        None => Err(NetworkingError(format!("unknown network interface: {}", interface_name)))
     }
 }
 
