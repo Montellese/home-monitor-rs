@@ -1,11 +1,15 @@
 use clap::Clap;
 
-use log::{error, info};
+use log::{debug, error, info};
 use simplelog::{LevelFilter, SimpleLogger};
 
 use std::path::Path;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Duration;
 
 mod configuration;
+mod monitor;
 mod networking;
 
 #[derive(Clap)]
@@ -23,6 +27,61 @@ struct Opts {
     shutdown: bool,
     #[clap(short = 'w', long = "wakeup", group = "mode")]
     wakeup: bool,
+}
+
+fn run(args: Opts, config: configuration::Configuration) -> exitcode::ExitCode {
+    let server = &config.server;
+
+    // check if a manual option (wakeup / shutdown) has been provided
+    if args.wakeup {
+        info!("waking up {}...", server.machine.name);
+        return match networking::wakeup(&server.machine) {
+            Err(_)=> {
+                error!("failed to wake up {}", server.machine.name);
+                exitcode::UNAVAILABLE
+            },
+            Ok(_) => {
+                info!("{} successfully woken up", server.machine.name);
+                exitcode::OK
+            },
+        }
+    } else if args.shutdown {
+        info!("shutting down {}...", server.machine.name);
+        return match networking::shutdown::shutdown(&server) {
+            Err(e)=> {
+                error!("failed to shut down {}: {}", server.machine.name, e);
+                exitcode::UNAVAILABLE
+            },
+            Ok(_) => {
+                info!("{} successfully shut down", server.machine.name);
+                exitcode::OK
+            },
+        }
+    } else {
+        process(config)
+    }
+}
+
+fn process(config: configuration::Configuration) -> exitcode::ExitCode {
+    debug!("setting up signal handling for SIGTERM");
+    let term = Arc::new(AtomicBool::new(false));
+    match signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(&term)) {
+        Err(e) => {
+            error!("failed to setup signal handling: {}", e);
+            return exitcode::SOFTWARE;
+        },
+        Ok(_) => {}
+    }
+
+    let mut monitor = monitor::Monitor::new(config);
+
+    while !term.load(Ordering::Relaxed) {
+        monitor.run_once();
+
+        std::thread::sleep(Duration::from_secs(1));
+    }
+
+    exitcode::OK
 }
 
 fn main() {
@@ -67,35 +126,8 @@ fn main() {
     }
 
     // log the details of the configured server
-    let server: configuration::machine::Server = config.server;
+    let server = &config.server;
     info!("server: [{} ({})] {} / {}", server.machine.name, server.username, server.machine.mac, server.machine.ip);
 
-    // check if a manual option (wakeup / shutdown) has been provided
-    if args.wakeup {
-        info!("waking up {}...", server.machine.name);
-        match networking::wakeup(&server.machine) {
-            Err(_)=> {
-                error!("failed to wake up {}", server.machine.name);
-                std::process::exit(exitcode::UNAVAILABLE);
-            },
-            Ok(_) => {
-                info!("{} successfully woken up", server.machine.name);
-                std::process::exit(exitcode::OK);
-            },
-        }
-    } else if args.shutdown {
-        info!("shutting down {}...", server.machine.name);
-        match networking::shutdown::shutdown(&server) {
-            Err(e)=> {
-                error!("failed to shut down {}: {}", server.machine.name, e);
-                std::process::exit(exitcode::UNAVAILABLE);
-            },
-            Ok(_) => {
-                info!("{} successfully shut down", server.machine.name);
-                std::process::exit(exitcode::OK);
-            },
-        }
-    } else {
-        unimplemented!()
-    }
+    std::process::exit(run(args, config));
 }
