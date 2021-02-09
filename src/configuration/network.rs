@@ -3,8 +3,8 @@ use serde::Deserialize;
 #[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Ping {
-    pub interval: u32,
-    pub timeout: u32,
+    pub interval: u64,
+    pub timeout: u64,
 }
 
 impl Ping {
