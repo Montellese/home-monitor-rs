@@ -5,18 +5,16 @@ use pnet::datalink::{interfaces, NetworkInterface};
 
 use std::fmt;
 
+pub mod networking_error;
 pub mod shutdown;
 
-#[derive(Debug)]
-pub struct NetworkingError(String);
-
-impl fmt::Display for NetworkingError {
+impl fmt::Display for networking_error::NetworkingError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "[NetworkingError] {}", self.0)
     }
 }
 
-pub fn get_network_interface(interface_name: &str) -> Result<NetworkInterface, NetworkingError> {
+pub fn get_network_interface(interface_name: &str) -> Result<NetworkInterface, networking_error::NetworkingError> {
     // get all network interfaces
     let ifaces = interfaces();
 
@@ -24,7 +22,7 @@ pub fn get_network_interface(interface_name: &str) -> Result<NetworkInterface, N
     let iface = ifaces.into_iter().find(|iface| iface.name == interface_name);
     return match iface {
         Some(iface) => Ok(iface),
-        None => Err(NetworkingError(format!("unknown network interface: {}", interface_name)))
+        None => Err(networking_error::NetworkingError(format!("unknown network interface: {}", interface_name)))
     }
 }
 
