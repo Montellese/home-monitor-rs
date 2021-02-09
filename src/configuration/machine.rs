@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-use std::time::SystemTime;
+use std::time::Instant;
 
 #[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -8,7 +8,6 @@ pub struct Machine {
     pub name: String,
     pub mac: String,
     pub ip: String,
-    pub timeout: u16,
 
     #[serde(default)]
     pub username: String,
@@ -18,7 +17,9 @@ pub struct Machine {
     #[serde(skip)]
     pub is_online: bool,
     #[serde(skip)]
-    pub last_seen: Option<SystemTime>,
+    pub last_seen: Option<Instant>,
+    #[serde(rename = "timeout")]
+    pub last_seen_timeout: u64,
 }
 
 impl Machine {
@@ -31,7 +32,7 @@ impl Machine {
     pub fn set_online(&mut self, online: bool) {
         self.is_online = online;
         if online {
-            self.last_seen = Some(SystemTime::now());
+            self.last_seen = Some(Instant::now());
         }
     }
 }
