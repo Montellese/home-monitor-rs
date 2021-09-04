@@ -50,7 +50,7 @@ impl Monitor {
             match machine_ip.parse() {
                 Ok(ip_addr) => {
                     machines.insert(ip_addr, machine.clone());
-                    pinger.add_ipaddr(&machine_ip);
+                    pinger.add_ipaddr(machine_ip);
                 }
                 Err(e) => {
                     error!("failed to parse IP address of {}: {}", machine.name, e);
@@ -70,15 +70,15 @@ impl Monitor {
 
         Monitor {
             server: config.server,
-            server_ip: server_ip,
-            machines: machines,
+            server_ip,
+            machines,
             always_on: false,
             always_on_file: config.files.always_on,
             last_ping: Instant::now().sub(ping_interval),
             last_change: Instant::now().sub(CHANGE_TIMEOUT),
-            ping_interval: ping_interval,
-            pinger: pinger,
-            pinger_results: pinger_results,
+            ping_interval,
+            pinger,
+            pinger_results,
         }
     }
 
@@ -185,7 +185,7 @@ impl Monitor {
                 }
             } else if !self.always_on && !any_machine_is_online && server.machine.is_online {
                 info!("shutting down {}...", server.machine.name);
-                match shutdown::shutdown(&server) {
+                match shutdown::shutdown(server) {
                     Err(e) => error!("failed to shut down {}: {}", server.machine.name, e),
                     Ok(_) => {
                         self.last_change = Instant::now();

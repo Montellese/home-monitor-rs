@@ -9,7 +9,7 @@ pub mod files;
 pub mod machine;
 pub mod network;
 
-pub const LOCATION: &'static str = "/etc/home-monitor/home-monitor.json";
+pub const LOCATION: &str = "/etc/home-monitor/home-monitor.json";
 
 #[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]

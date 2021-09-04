@@ -47,7 +47,7 @@ fn run(args: Opts, config: configuration::Configuration) -> exitcode::ExitCode {
         };
     } else if args.shutdown {
         info!("shutting down {}...", server.machine.name);
-        return match networking::shutdown::shutdown(&server) {
+        return match networking::shutdown::shutdown(server) {
             Err(e) => {
                 error!("failed to shut down {}: {}", server.machine.name, e);
                 exitcode::UNAVAILABLE
@@ -65,12 +65,9 @@ fn run(args: Opts, config: configuration::Configuration) -> exitcode::ExitCode {
 fn process(config: configuration::Configuration) -> exitcode::ExitCode {
     debug!("setting up signal handling for SIGTERM");
     let term = Arc::new(AtomicBool::new(false));
-    match signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(&term)) {
-        Err(e) => {
-            error!("failed to setup signal handling: {}", e);
-            return exitcode::SOFTWARE;
-        }
-        Ok(_) => {}
+    if let Err(e) = signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(&term)) {
+        error!("failed to setup signal handling: {}", e);
+        return exitcode::SOFTWARE;
     }
 
     let mut monitor = monitor::Monitor::new(config);
