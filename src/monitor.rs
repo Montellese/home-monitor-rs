@@ -1,4 +1,4 @@
-use super::configuration::{Configuration, machine};
+use super::configuration::{machine, Configuration};
 use super::networking::{shutdown, wakeup};
 
 use fastping_rs::PingResult;
@@ -51,7 +51,7 @@ impl Monitor {
                 Ok(ip_addr) => {
                     machines.insert(ip_addr, machine.clone());
                     pinger.add_ipaddr(&machine_ip);
-                },
+                }
                 Err(e) => {
                     error!("failed to parse IP address of {}: {}", machine.name, e);
                 }
@@ -61,7 +61,10 @@ impl Monitor {
         let server_ip: IpAddr = match config.server.machine.ip.parse() {
             Ok(ip_addr) => ip_addr,
             Err(e) => {
-                panic!("Failed to parse server IP address ({}): {}", config.server.machine.ip, e);
+                panic!(
+                    "Failed to parse server IP address ({}): {}",
+                    config.server.machine.ip, e
+                );
             }
         };
 
@@ -113,14 +116,16 @@ impl Monitor {
                             let machine: Option<&mut machine::Machine>;
                             if addr == self.server_ip {
                                 machine = Some(&mut self.server.machine);
-                            }
-                            else {
+                            } else {
                                 machine = self.machines.get_mut(&addr);
                             }
 
                             match machine {
                                 Some(machine) => {
-                                    debug!("no ping response from {} ({})", machine.name, machine.ip);
+                                    debug!(
+                                        "no ping response from {} ({})",
+                                        machine.name, machine.ip
+                                    );
 
                                     // update the online state of the machine
                                     Monitor::check_and_update_machine_online(machine, false);
@@ -134,14 +139,16 @@ impl Monitor {
                             let machine: Option<&mut machine::Machine>;
                             if addr == self.server_ip {
                                 machine = Some(&mut self.server.machine);
-                            }
-                            else {
+                            } else {
                                 machine = self.machines.get_mut(&addr);
                             }
 
                             match machine {
                                 Some(machine) => {
-                                    debug!("received ping response from {} ({})", machine.name, machine.ip);
+                                    debug!(
+                                        "received ping response from {} ({})",
+                                        machine.name, machine.ip
+                                    );
 
                                     // update the online state of the machine
                                     Monitor::check_and_update_machine_online(machine, true);
@@ -171,18 +178,18 @@ impl Monitor {
             if !self.server.machine.is_online && (self.always_on || any_machine_is_online) {
                 info!("waking up {}...", server.machine.name);
                 match wakeup(&server.machine) {
-                    Err(_)=> error!("failed to wake up {}", server.machine.name),
+                    Err(_) => error!("failed to wake up {}", server.machine.name),
                     Ok(_) => {
                         self.last_change = Instant::now();
-                    },
+                    }
                 }
             } else if !self.always_on && !any_machine_is_online && server.machine.is_online {
                 info!("shutting down {}...", server.machine.name);
                 match shutdown::shutdown(&server) {
-                    Err(e)=> error!("failed to shut down {}: {}", server.machine.name, e),
+                    Err(e) => error!("failed to shut down {}: {}", server.machine.name, e),
                     Ok(_) => {
                         self.last_change = Instant::now();
-                    },
+                    }
                 }
             }
         }
@@ -196,7 +203,9 @@ impl Monitor {
         //   or if it has become offline
         if is_online {
             machine.set_online(true)
-        } else if machine_was_online && machine.last_seen.unwrap().elapsed() >  Duration::from_secs(machine.last_seen_timeout) {
+        } else if machine_was_online
+            && machine.last_seen.unwrap().elapsed() > Duration::from_secs(machine.last_seen_timeout)
+        {
             machine.set_online(false)
         }
 

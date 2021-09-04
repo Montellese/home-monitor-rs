@@ -35,7 +35,10 @@ fn handle_shutdown_error<T>(result: Result<T, ssh2::Error>) -> Result<T, Shutdow
 }
 
 pub fn shutdown(server: &Server) -> Result<(), ShutdownError> {
-    debug!("creating an SSH session to {} [{}]", server.machine.name, server.machine.ip);
+    debug!(
+        "creating an SSH session to {} [{}]",
+        server.machine.name, server.machine.ip
+    );
     let tcp = match TcpStream::connect(&server.machine.ip) {
         Ok(s) => s,
         Err(e) => return Err(ShutdownError::new(format!("{}", e))),
@@ -44,7 +47,10 @@ pub fn shutdown(server: &Server) -> Result<(), ShutdownError> {
     session.set_tcp_stream(tcp);
     handle_shutdown_error(session.handshake())?;
 
-    debug!("authenticating SSH session to {} for {}", server.machine.name, server.username);
+    debug!(
+        "authenticating SSH session to {} for {}",
+        server.machine.name, server.username
+    );
     handle_shutdown_error(session.userauth_password(&server.username, &server.password))?;
 
     debug!("executing \"shutdown -h now\" on {}", server.machine.name);

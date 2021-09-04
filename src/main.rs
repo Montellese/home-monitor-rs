@@ -4,8 +4,8 @@ use log::{debug, error, info};
 use simplelog::{LevelFilter, SimpleLogger};
 
 use std::path::Path;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::time::Duration;
 
 mod configuration;
@@ -36,27 +36,27 @@ fn run(args: Opts, config: configuration::Configuration) -> exitcode::ExitCode {
     if args.wakeup {
         info!("waking up {}...", server.machine.name);
         return match networking::wakeup(&server.machine) {
-            Err(_)=> {
+            Err(_) => {
                 error!("failed to wake up {}", server.machine.name);
                 exitcode::UNAVAILABLE
-            },
+            }
             Ok(_) => {
                 info!("{} successfully woken up", server.machine.name);
                 exitcode::OK
-            },
-        }
+            }
+        };
     } else if args.shutdown {
         info!("shutting down {}...", server.machine.name);
         return match networking::shutdown::shutdown(&server) {
-            Err(e)=> {
+            Err(e) => {
                 error!("failed to shut down {}: {}", server.machine.name, e);
                 exitcode::UNAVAILABLE
-            },
+            }
             Ok(_) => {
                 info!("{} successfully shut down", server.machine.name);
                 exitcode::OK
-            },
-        }
+            }
+        };
     } else {
         process(config)
     }
@@ -69,7 +69,7 @@ fn process(config: configuration::Configuration) -> exitcode::ExitCode {
         Err(e) => {
             error!("failed to setup signal handling: {}", e);
             return exitcode::SOFTWARE;
-        },
+        }
         Ok(_) => {}
     }
 
@@ -104,7 +104,7 @@ fn main() {
         Err(e) => {
             error!("failed to load configuration from {}: {}", args.config, e);
             std::process::exit(exitcode::CONFIG);
-        },
+        }
         _ => info!("configuration successfully loaded"),
     }
 
@@ -115,7 +115,7 @@ fn main() {
         Err(e) => {
             error!("{}", e);
             std::process::exit(exitcode::CONFIG);
-        },
+        }
         Ok(r) => r,
     };
 
@@ -124,7 +124,11 @@ fn main() {
     info!("always on: {}", files.always_on);
 
     // log the details of the configured network interface
-    info!("network: [{}] {}", network_interface.name, network_interface.mac.unwrap());
+    info!(
+        "network: [{}] {}",
+        network_interface.name,
+        network_interface.mac.unwrap()
+    );
     for ip in network_interface.ips.iter() {
         info!("  {}", ip);
     }
@@ -136,14 +140,23 @@ fn main() {
     // log the details of the configured server
     let server = &config.server;
     info!("server:");
-    info!("  {}@{}: {} [{}] ({}s)",
-          server.username, server.machine.name, server.machine.ip, server.machine.mac, server.machine.last_seen_timeout);
+    info!(
+        "  {}@{}: {} [{}] ({}s)",
+        server.username,
+        server.machine.name,
+        server.machine.ip,
+        server.machine.mac,
+        server.machine.last_seen_timeout
+    );
 
     // log the details of the configured machines
     let machines = &config.machines;
     info!("machines ({}):", machines.len());
     for machine in machines.iter() {
-        info!("  {}: {} [{}] ({}s)", machine.name, machine.ip, machine.mac, machine.last_seen_timeout);
+        info!(
+            "  {}: {} [{}] ({}s)",
+            machine.name, machine.ip, machine.mac, machine.last_seen_timeout
+        );
     }
 
     info!("");
