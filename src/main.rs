@@ -119,15 +119,34 @@ fn main() {
         Ok(r) => r,
     };
 
+    // log the always on file
+    let files = &config.files;
+    info!("always on: {}", files.always_on);
+
     // log the details of the configured network interface
     info!("network: [{}] {}", network_interface.name, network_interface.mac.unwrap());
     for ip in network_interface.ips.iter() {
         info!("  {}", ip);
     }
 
+    // log the ping configuration
+    let ping = &config.network.ping;
+    info!("ping: every {}s for {}s", ping.interval, ping.timeout);
+
     // log the details of the configured server
     let server = &config.server;
-    info!("server: [{} ({})] {} / {}", server.machine.name, server.username, server.machine.mac, server.machine.ip);
+    info!("server:");
+    info!("  {}@{}: {} [{}] ({}s)",
+          server.username, server.machine.name, server.machine.ip, server.machine.mac, server.machine.last_seen_timeout);
 
+    // log the details of the configured machines
+    let machines = &config.machines;
+    info!("machines ({}):", machines.len());
+    for machine in machines.iter() {
+        info!("  {}: {} [{}] ({}s)", machine.name, machine.ip, machine.mac, machine.last_seen_timeout);
+    }
+
+    info!("");
+    info!("monitoring the network for activity...");
     std::process::exit(run(args, config));
 }
