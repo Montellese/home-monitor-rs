@@ -6,7 +6,6 @@ use pnet::datalink::{interfaces, NetworkInterface};
 use std::fmt;
 
 pub mod networking_error;
-pub mod ping;
 pub mod shutdown;
 
 impl fmt::Display for networking_error::NetworkingError {
