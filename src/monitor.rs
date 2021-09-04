@@ -75,7 +75,6 @@ impl Monitor {
                     Err(_)=> error!("failed to wake up {}", server.machine.name),
                     Ok(_) => {
                         self.last_change = Instant::now();
-                        info!("{} successfully woken up", server.machine.name);
                     },
                 }
             } else if !self.always_on && !any_machine_is_online && server.machine.is_online {
@@ -84,7 +83,6 @@ impl Monitor {
                     Err(e)=> error!("failed to shut down {}: {}", server.machine.name, e),
                     Ok(_) => {
                         self.last_change = Instant::now();
-                        info!("{} successfully shut down", server.machine.name);
                     },
                 }
             }
