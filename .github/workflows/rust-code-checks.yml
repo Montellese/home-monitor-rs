@@ -30,8 +30,20 @@ jobs:
           override: true
           components: rustfmt, clippy
 
+      - name: Cache for Rust ${{ matrix.rust }}
+        id: cache-cargo
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-${{ matrix.rust }}-
+
       - name: Build using Rust ${{ matrix.rust }}
         uses: actions-rs/cargo@v1
+        if: steps.cache-cargo.outputs.cache-hit != 'true'
         with:
           command: build
 
