@@ -2,6 +2,8 @@
 
 <p align="center">
     <a href="LICENSE"><img alt="License: GPL-2.0-later" src="https://img.shields.io/badge/license-GPLv2-blue"></a> <a href="https://github.com/Montellese/home-monitor-rs/pulls"><img alt="Pull Requests Welcome" src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg"></a> <a href="https://github.com/Montellese/home-monitor-rs/pulls"><img alt="Contributions Welcome" src="https://img.shields.io/badge/contributions-welcome-brightgreen.svg"></a>
+    <br />
+    <a href="https://travis-ci.org/Montellese/home-monitor-rs"><img alt="Travis CI Build Status" src="https://api.travis-ci.org/Montellese/home-monitor-rs.svg?branch=master"></a>
 </p>
 
 `home-monitor-rs` is a re-write of [`home-monitor`](https://github.com/Montellese/home-monitor) in [Rust](https://www.rust-lang.org/).
