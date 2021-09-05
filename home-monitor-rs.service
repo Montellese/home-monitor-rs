@@ -1,0 +1,10 @@
+[Unit]
+Descritpion=Home Monitor
+
+[Service]
+Type=simple
+Restart=on-failure
+ExecStart=home-monitor-rs -c /etc/home-monitor/home-monitor.json
+
+[Install]
+WantedBy=multi-user.target
