@@ -1,5 +1,9 @@
 # home-monitor-rs
 
+<p align="center">
+    <a href="LICENSE"><img alt="License: GPL-2.0-later" src="https://img.shields.io/badge/license-GPLv2-blue"></a> <a href="https://github.com/Montellese/home-monitor-rs/pulls"><img alt="Pull Requests Welcome" src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg"></a> <a href="https://github.com/Montellese/home-monitor-rs/pulls"><img alt="Contributions Welcome" src="https://img.shields.io/badge/contributions-welcome-brightgreen.svg"></a>
+</p>
+
 `home-monitor-rs` is a re-write of [`home-monitor`](https://github.com/Montellese/home-monitor) in [Rust](https://www.rust-lang.org/).
 
 `home-monitor-rs` is a service designed to run on an "always online" device (like a router or a Raspberry Pi) which constantly monitors a configurable list of devices (based on their IP addresses) to see if any of them are online. If all devices are offline a configured server is automatically turned off using SSH. If at least one of the configured devices is online the server is automatically turned on using Wake-on-LAN.
