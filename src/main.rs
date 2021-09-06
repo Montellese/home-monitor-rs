@@ -29,13 +29,17 @@ struct Opts {
     wakeup: bool,
 }
 
-fn run(args: Opts, config: configuration::Configuration) -> exitcode::ExitCode {
+fn run(
+    args: Opts,
+    config: configuration::Configuration,
+    controllable_server: Box<dyn networking::controllable_server::ControllableServer>,
+) -> exitcode::ExitCode {
     let server = &config.server;
 
     // check if a manual option (wakeup / shutdown) has been provided
     if args.wakeup {
         info!("waking up {}...", server.machine.name);
-        return match networking::wakeup(&server.machine) {
+        return match controllable_server.wakeup() {
             Err(_) => {
                 error!("failed to wake up {}", server.machine.name);
                 exitcode::UNAVAILABLE
@@ -47,7 +51,7 @@ fn run(args: Opts, config: configuration::Configuration) -> exitcode::ExitCode {
         };
     } else if args.shutdown {
         info!("shutting down {}...", server.machine.name);
-        return match networking::shutdown::shutdown(server) {
+        return match controllable_server.shutdown() {
             Err(e) => {
                 error!("failed to shut down {}: {}", server.machine.name, e);
                 exitcode::UNAVAILABLE
@@ -58,11 +62,14 @@ fn run(args: Opts, config: configuration::Configuration) -> exitcode::ExitCode {
             }
         };
     } else {
-        process(config)
+        process(config, controllable_server)
     }
 }
 
-fn process(config: configuration::Configuration) -> exitcode::ExitCode {
+fn process(
+    config: configuration::Configuration,
+    controllable_server: Box<dyn networking::controllable_server::ControllableServer>,
+) -> exitcode::ExitCode {
     debug!("setting up signal handling for SIGTERM");
     let term = Arc::new(AtomicBool::new(false));
     if let Err(e) = signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(&term)) {
@@ -70,7 +77,7 @@ fn process(config: configuration::Configuration) -> exitcode::ExitCode {
         return exitcode::SOFTWARE;
     }
 
-    let mut monitor = monitor::Monitor::new(config);
+    let mut monitor = monitor::Monitor::new(config, controllable_server);
 
     while !term.load(Ordering::Relaxed) {
         monitor.run_once();
@@ -158,5 +165,10 @@ fn main() {
 
     info!("");
     info!("monitoring the network for activity...");
-    std::process::exit(run(args, config));
+
+    // instantiate an Ssh2Server
+    let controllable_server = networking::ssh2_server::Ssh2Server::new(config.server.clone());
+
+    // run the monitoring process
+    std::process::exit(run(args, config, Box::new(controllable_server)));
 }

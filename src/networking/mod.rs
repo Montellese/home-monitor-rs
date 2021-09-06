@@ -1,10 +1,9 @@
-use super::configuration::machine::Machine;
-
-use log::debug;
 use pnet::datalink::{interfaces, NetworkInterface};
 
+pub mod controllable_server;
 pub mod networking_error;
-pub mod shutdown;
+pub mod shutdown_error;
+pub mod ssh2_server;
 
 pub fn get_network_interface(
     interface_name: &str,
@@ -23,13 +22,4 @@ pub fn get_network_interface(
             interface_name
         ))),
     };
-}
-
-pub fn wakeup(machine: &Machine) -> std::io::Result<()> {
-    debug!(
-        "sending wake-on-lan request to {} [{}]",
-        machine.name, machine.mac
-    );
-    let wol = wakey::WolPacket::from_string(&machine.mac, ':');
-    wol.send_magic()
 }

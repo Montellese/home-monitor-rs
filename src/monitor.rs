@@ -1,5 +1,5 @@
 use super::configuration::{machine, Configuration};
-use super::networking::{shutdown, wakeup};
+use super::networking::controllable_server::ControllableServer;
 
 use fastping_rs::PingResult;
 use fastping_rs::PingResult::{Idle, Receive};
@@ -16,6 +16,7 @@ use std::time::{Duration, Instant};
 const CHANGE_TIMEOUT: Duration = Duration::from_secs(120);
 
 pub struct Monitor {
+    controllable_server: Box<dyn ControllableServer>,
     server: machine::Server,
     server_ip: IpAddr,
     machines: HashMap<IpAddr, machine::Machine>,
@@ -31,7 +32,7 @@ pub struct Monitor {
 }
 
 impl Monitor {
-    pub fn new(config: Configuration) -> Self {
+    pub fn new(config: Configuration, controllable_server: Box<dyn ControllableServer>) -> Self {
         let ping_interval = Duration::from_secs(config.network.ping.interval);
 
         // create a pinger and its results receiver
@@ -69,6 +70,7 @@ impl Monitor {
         };
 
         Monitor {
+            controllable_server,
             server: config.server,
             server_ip,
             machines,
@@ -177,7 +179,7 @@ impl Monitor {
             // then wake the server up
             if !self.server.machine.is_online && (self.always_on || any_machine_is_online) {
                 info!("waking up {}...", server.machine.name);
-                match wakeup(&server.machine) {
+                match self.controllable_server.wakeup() {
                     Err(_) => error!("failed to wake up {}", server.machine.name),
                     Ok(_) => {
                         self.last_change = Instant::now();
@@ -185,7 +187,7 @@ impl Monitor {
                 }
             } else if !self.always_on && !any_machine_is_online && server.machine.is_online {
                 info!("shutting down {}...", server.machine.name);
-                match shutdown::shutdown(server) {
+                match self.controllable_server.shutdown() {
                     Err(e) => error!("failed to shut down {}: {}", server.machine.name, e),
                     Ok(_) => {
                         self.last_change = Instant::now();
