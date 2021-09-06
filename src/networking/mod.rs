@@ -3,16 +3,8 @@ use super::configuration::machine::Machine;
 use log::debug;
 use pnet::datalink::{interfaces, NetworkInterface};
 
-use std::fmt;
-
 pub mod networking_error;
 pub mod shutdown;
-
-impl fmt::Display for networking_error::NetworkingError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "[NetworkingError] {}", self.0)
-    }
-}
 
 pub fn get_network_interface(
     interface_name: &str,
