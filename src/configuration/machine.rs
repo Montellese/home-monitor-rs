@@ -1,18 +1,11 @@
 use serde::Deserialize;
 
-use std::time::Instant;
-
-#[derive(Clone, Debug, Default, Deserialize)]
+#[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Machine {
     pub name: String,
     pub mac: String,
     pub ip: String,
-
-    #[serde(default)]
-    pub username: String,
-    #[serde(default)]
-    pub password: String,
 
     #[serde(skip)]
     pub is_online: bool,
