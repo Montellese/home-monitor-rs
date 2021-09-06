@@ -34,6 +34,7 @@ fn run(
     args: Opts,
     config: configuration::Configuration,
     controllable_server: Box<dyn networking::controllable_server::ControllableServer>,
+    always_on: Box<dyn dom::always_on::AlwaysOn>,
 ) -> exitcode::ExitCode {
     let server = &config.server;
 
@@ -63,13 +64,14 @@ fn run(
             }
         };
     } else {
-        process(config, controllable_server)
+        process(config, controllable_server, always_on)
     }
 }
 
 fn process(
     config: configuration::Configuration,
     controllable_server: Box<dyn networking::controllable_server::ControllableServer>,
+    always_on: Box<dyn dom::always_on::AlwaysOn>,
 ) -> exitcode::ExitCode {
     debug!("setting up signal handling for SIGTERM");
     let term = Arc::new(AtomicBool::new(false));
@@ -78,7 +80,7 @@ fn process(
         return exitcode::SOFTWARE;
     }
 
-    let mut monitor = monitor::Monitor::new(&config, controllable_server);
+    let mut monitor = monitor::Monitor::new(&config, controllable_server, always_on);
 
     while !term.load(Ordering::Relaxed) {
         monitor.run_once();
@@ -167,11 +169,14 @@ fn main() {
     info!("");
     info!("monitoring the network for activity...");
 
+    // instantiate an AlwaysOnFile
+    let always_on = Box::new(dom::always_on_file::AlwaysOnFile::new(&config.files));
+
     // instantiate an Ssh2Server
     let controllable_server = Box::new(networking::ssh2_server::Ssh2Server::new(
         dom::machine::Server::new(&config.server),
     ));
 
     // run the monitoring process
-    std::process::exit(run(args, config, controllable_server));
+    std::process::exit(run(args, config, controllable_server, always_on));
 }

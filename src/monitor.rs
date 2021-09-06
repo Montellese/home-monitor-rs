@@ -1,4 +1,5 @@
 use super::configuration::Configuration;
+use super::dom::always_on::AlwaysOn;
 use super::dom::machine::{Machine, Server};
 use super::networking::controllable_server::ControllableServer;
 
@@ -11,7 +12,6 @@ use log::{debug, error, info, warn};
 use std::collections::HashMap;
 use std::net::IpAddr;
 use std::ops::Sub;
-use std::path::Path;
 use std::time::{Duration, Instant};
 
 const CHANGE_TIMEOUT: Duration = Duration::from_secs(120);
@@ -22,8 +22,8 @@ pub struct Monitor<'a> {
     server_ip: IpAddr,
     machines: HashMap<IpAddr, Machine<'a>>,
 
-    always_on: bool,
-    always_on_file: String,
+    always_on_state: bool,
+    always_on: Box<dyn AlwaysOn>,
     last_ping: Instant,
     last_change: Instant,
     ping_interval: Duration,
@@ -36,6 +36,7 @@ impl<'a> Monitor<'a> {
     pub fn new(
         config: &'a Configuration,
         controllable_server: Box<dyn ControllableServer>,
+        always_on: Box<dyn AlwaysOn>,
     ) -> Self {
         let ping_interval = Duration::from_secs(config.network.ping.interval);
 
@@ -78,8 +79,8 @@ impl<'a> Monitor<'a> {
             server: Server::new(&config.server),
             server_ip,
             machines,
-            always_on: false,
-            always_on_file: config.files.always_on.clone(),
+            always_on_state: false,
+            always_on,
             last_ping: Instant::now().sub(ping_interval),
             last_change: Instant::now().sub(CHANGE_TIMEOUT),
             ping_interval,
@@ -91,15 +92,15 @@ impl<'a> Monitor<'a> {
     pub fn run_once(&mut self) {
         // check the always on file
         {
-            let always_on_file_exists = Path::new(&self.always_on_file).exists();
-            if always_on_file_exists != self.always_on {
+            let always_on_file_exists = self.always_on.is_always_on();
+            if always_on_file_exists != self.always_on_state {
                 if always_on_file_exists {
                     info!("ALWAYS ON has been enabled");
                 } else {
                     info!("ALWAYS ON has been disabled");
                 }
 
-                self.always_on = always_on_file_exists;
+                self.always_on_state = always_on_file_exists;
             }
         }
 
@@ -174,14 +175,14 @@ impl<'a> Monitor<'a> {
         let any_machine_is_online = self.machines.values().any(|machine| machine.is_online);
 
         // process the collected information
-        if self.always_on || self.last_change.elapsed() > CHANGE_TIMEOUT {
+        if self.always_on_state || self.last_change.elapsed() > CHANGE_TIMEOUT {
             let server = &self.server;
 
             // if the server is not online and
             //   the always on file exists or
             //   any machine is online
             // then wake the server up
-            if !self.server.machine.is_online && (self.always_on || any_machine_is_online) {
+            if !self.server.machine.is_online && (self.always_on_state || any_machine_is_online) {
                 info!("waking up {}...", server.machine.name);
                 match self.controllable_server.wakeup() {
                     Err(_) => error!("failed to wake up {}", server.machine.name),
@@ -189,7 +190,7 @@ impl<'a> Monitor<'a> {
                         self.last_change = Instant::now();
                     }
                 }
-            } else if !self.always_on && !any_machine_is_online && server.machine.is_online {
+            } else if !self.always_on_state && !any_machine_is_online && server.machine.is_online {
                 info!("shutting down {}...", server.machine.name);
                 match self.controllable_server.shutdown() {
                     Err(e) => error!("failed to shut down {}: {}", server.machine.name, e),
