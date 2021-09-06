@@ -7,10 +7,6 @@ pub struct Machine {
     pub mac: String,
     pub ip: String,
 
-    #[serde(skip)]
-    pub is_online: bool,
-    #[serde(skip)]
-    pub last_seen: Option<Instant>,
     #[serde(rename = "timeout")]
     pub last_seen_timeout: u64,
 }
@@ -20,17 +16,9 @@ impl Machine {
     pub fn new() -> Self {
         Machine::default()
     }
-
-    #[allow(dead_code)]
-    pub fn set_online(&mut self, online: bool) {
-        self.is_online = online;
-        if online {
-            self.last_seen = Some(Instant::now());
-        }
-    }
 }
 
-#[derive(Clone, Debug, Default, Deserialize)]
+#[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Server {
     #[serde(flatten)]

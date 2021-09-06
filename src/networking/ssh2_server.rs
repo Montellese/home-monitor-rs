@@ -1,4 +1,4 @@
-use super::super::configuration;
+use super::super::dom::machine;
 
 use super::controllable_server::ControllableServer;
 use super::shutdown_error::ShutdownError;
@@ -8,12 +8,22 @@ use ssh2::Session;
 use std::net::TcpStream;
 
 pub struct Ssh2Server {
-    server: configuration::machine::Server,
+    name: String,
+    mac: String,
+    ip: String,
+    username: String,
+    password: String,
 }
 
 impl Ssh2Server {
-    pub fn new(server: configuration::machine::Server) -> Self {
-        Ssh2Server { server }
+    pub fn new(server: machine::Server) -> Self {
+        Ssh2Server {
+            name: server.machine.name.to_string(),
+            mac: server.machine.mac.to_string(),
+            ip: server.machine.ip.to_string(),
+            username: server.username.to_string(),
+            password: server.password.to_string(),
+        }
     }
 
     fn ssh2_to_shutdown_error(e: ssh2::Error) -> ShutdownError {
@@ -30,24 +40,17 @@ impl Ssh2Server {
 
 impl ControllableServer for Ssh2Server {
     fn wakeup(&self) -> std::io::Result<()> {
-        let machine = &self.server.machine;
-
         debug!(
             "sending wake-on-lan request to {} [{}]",
-            machine.name, machine.mac
+            self.name, self.mac
         );
-        let wol = wakey::WolPacket::from_string(&machine.mac, ':');
+        let wol = wakey::WolPacket::from_string(&self.mac, ':');
         wol.send_magic()
     }
 
     fn shutdown(&self) -> Result<(), ShutdownError> {
-        let server = &self.server;
-
-        debug!(
-            "creating an SSH session to {} [{}]",
-            server.machine.name, server.machine.ip
-        );
-        let tcp = match TcpStream::connect(&server.machine.ip) {
+        debug!("creating an SSH session to {} [{}]", self.name, self.ip);
+        let tcp = match TcpStream::connect(&self.ip) {
             Ok(s) => s,
             Err(e) => return Err(ShutdownError::new(format!("{}", e))),
         };
@@ -57,13 +60,13 @@ impl ControllableServer for Ssh2Server {
 
         debug!(
             "authenticating SSH session to {} for {}",
-            server.machine.name, server.username
+            self.name, self.username
         );
         Ssh2Server::handle_shutdown_error(
-            session.userauth_password(&server.username, &server.password),
+            session.userauth_password(&self.username, &self.password),
         )?;
 
-        debug!("executing \"shutdown -h now\" on {}", server.machine.name);
+        debug!("executing \"shutdown -h now\" on {}", self.name);
         let mut channel = Ssh2Server::handle_shutdown_error(session.channel_session())?;
         Ssh2Server::handle_shutdown_error(channel.exec("shutdown -h now"))?;
 

@@ -9,6 +9,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 mod configuration;
+mod dom;
 mod monitor;
 mod networking;
 
@@ -77,7 +78,7 @@ fn process(
         return exitcode::SOFTWARE;
     }
 
-    let mut monitor = monitor::Monitor::new(config, controllable_server);
+    let mut monitor = monitor::Monitor::new(&config, controllable_server);
 
     while !term.load(Ordering::Relaxed) {
         monitor.run_once();
@@ -167,8 +168,10 @@ fn main() {
     info!("monitoring the network for activity...");
 
     // instantiate an Ssh2Server
-    let controllable_server = networking::ssh2_server::Ssh2Server::new(config.server.clone());
+    let controllable_server = Box::new(networking::ssh2_server::Ssh2Server::new(
+        dom::machine::Server::new(&config.server),
+    ));
 
     // run the monitoring process
-    std::process::exit(run(args, config, Box::new(controllable_server)));
+    std::process::exit(run(args, config, controllable_server));
 }

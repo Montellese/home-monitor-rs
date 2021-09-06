@@ -1,4 +1,5 @@
-use super::configuration::{machine, Configuration};
+use super::configuration::Configuration;
+use super::dom::machine::{Machine, Server};
 use super::networking::controllable_server::ControllableServer;
 
 use fastping_rs::PingResult;
@@ -15,11 +16,11 @@ use std::time::{Duration, Instant};
 
 const CHANGE_TIMEOUT: Duration = Duration::from_secs(120);
 
-pub struct Monitor {
+pub struct Monitor<'a> {
     controllable_server: Box<dyn ControllableServer>,
-    server: machine::Server,
+    server: Server<'a>,
     server_ip: IpAddr,
-    machines: HashMap<IpAddr, machine::Machine>,
+    machines: HashMap<IpAddr, Machine<'a>>,
 
     always_on: bool,
     always_on_file: String,
@@ -31,8 +32,11 @@ pub struct Monitor {
     pinger_results: std::sync::mpsc::Receiver<PingResult>,
 }
 
-impl Monitor {
-    pub fn new(config: Configuration, controllable_server: Box<dyn ControllableServer>) -> Self {
+impl<'a> Monitor<'a> {
+    pub fn new(
+        config: &'a Configuration,
+        controllable_server: Box<dyn ControllableServer>,
+    ) -> Self {
         let ping_interval = Duration::from_secs(config.network.ping.interval);
 
         // create a pinger and its results receiver
@@ -41,7 +45,7 @@ impl Monitor {
             Err(e) => panic!("Failed to create pinger: {}", e),
         };
 
-        let mut machines: HashMap<IpAddr, machine::Machine> = HashMap::new();
+        let mut machines: HashMap<IpAddr, Machine> = HashMap::new();
 
         // add the IP address of the server and all machines to the pinger
         pinger.add_ipaddr(&config.server.machine.ip);
@@ -50,7 +54,7 @@ impl Monitor {
 
             match machine_ip.parse() {
                 Ok(ip_addr) => {
-                    machines.insert(ip_addr, machine.clone());
+                    machines.insert(ip_addr, Machine::new(machine));
                     pinger.add_ipaddr(machine_ip);
                 }
                 Err(e) => {
@@ -71,11 +75,11 @@ impl Monitor {
 
         Monitor {
             controllable_server,
-            server: config.server,
+            server: Server::new(&config.server),
             server_ip,
             machines,
             always_on: false,
-            always_on_file: config.files.always_on,
+            always_on_file: config.files.always_on.clone(),
             last_ping: Instant::now().sub(ping_interval),
             last_change: Instant::now().sub(CHANGE_TIMEOUT),
             ping_interval,
@@ -115,7 +119,7 @@ impl Monitor {
                 match self.pinger_results.recv() {
                     Ok(result) => match result {
                         Idle { addr } => {
-                            let machine: Option<&mut machine::Machine>;
+                            let machine: Option<&mut Machine>;
                             if addr == self.server_ip {
                                 machine = Some(&mut self.server.machine);
                             } else {
@@ -138,7 +142,7 @@ impl Monitor {
                             };
                         }
                         Receive { addr, .. } => {
-                            let machine: Option<&mut machine::Machine>;
+                            let machine: Option<&mut Machine>;
                             if addr == self.server_ip {
                                 machine = Some(&mut self.server.machine);
                             } else {
@@ -197,7 +201,7 @@ impl Monitor {
         }
     }
 
-    fn check_and_update_machine_online(machine: &mut machine::Machine, is_online: bool) {
+    fn check_and_update_machine_online(machine: &mut Machine, is_online: bool) {
         let machine_was_online = machine.is_online;
 
         // update the servers online state
