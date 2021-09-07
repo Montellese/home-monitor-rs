@@ -34,6 +34,7 @@ fn run(
     args: Opts,
     config: configuration::Configuration,
     controllable_server: Box<dyn networking::controllable_server::ControllableServer>,
+    pinger: Box<dyn networking::pinger::Pinger>,
     always_on: Box<dyn dom::always_on::AlwaysOn>,
 ) -> exitcode::ExitCode {
     let server = &config.server;
@@ -64,13 +65,14 @@ fn run(
             }
         };
     } else {
-        process(config, controllable_server, always_on)
+        process(config, controllable_server, pinger, always_on)
     }
 }
 
 fn process(
     config: configuration::Configuration,
     controllable_server: Box<dyn networking::controllable_server::ControllableServer>,
+    pinger: Box<dyn networking::pinger::Pinger>,
     always_on: Box<dyn dom::always_on::AlwaysOn>,
 ) -> exitcode::ExitCode {
     debug!("setting up signal handling for SIGTERM");
@@ -80,7 +82,7 @@ fn process(
         return exitcode::SOFTWARE;
     }
 
-    let mut monitor = monitor::Monitor::new(&config, controllable_server, always_on);
+    let mut monitor = monitor::Monitor::new(&config, controllable_server, pinger, always_on);
 
     while !term.load(Ordering::Relaxed) {
         monitor.run_once();
@@ -177,6 +179,9 @@ fn main() {
         dom::machine::Server::new(&config.server),
     ));
 
+    // instantiate the FastPinger
+    let pinger = Box::new(networking::fast_pinger::FastPinger::new(None));
+
     // run the monitoring process
-    std::process::exit(run(args, config, controllable_server, always_on));
+    std::process::exit(run(args, config, controllable_server, pinger, always_on));
 }

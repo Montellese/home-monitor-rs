@@ -2,15 +2,10 @@ use super::configuration::Configuration;
 use super::dom::always_on::AlwaysOn;
 use super::dom::machine::{Machine, Server};
 use super::networking::controllable_server::ControllableServer;
-
-use fastping_rs::PingResult;
-use fastping_rs::PingResult::{Idle, Receive};
-use fastping_rs::Pinger;
+use super::networking::pinger::Pinger;
 
 use log::{debug, error, info, warn};
 
-use std::collections::HashMap;
-use std::net::IpAddr;
 use std::ops::Sub;
 use std::time::{Duration, Instant};
 
@@ -19,8 +14,7 @@ const CHANGE_TIMEOUT: Duration = Duration::from_secs(120);
 pub struct Monitor<'a> {
     controllable_server: Box<dyn ControllableServer>,
     server: Server<'a>,
-    server_ip: IpAddr,
-    machines: HashMap<IpAddr, Machine<'a>>,
+    machines: Vec<Machine<'a>>,
 
     always_on_state: bool,
     always_on: Box<dyn AlwaysOn>,
@@ -28,64 +22,71 @@ pub struct Monitor<'a> {
     last_change: Instant,
     ping_interval: Duration,
 
-    pinger: Pinger,
-    pinger_results: std::sync::mpsc::Receiver<PingResult>,
+    pinger: Box<dyn Pinger>,
 }
 
 impl<'a> Monitor<'a> {
     pub fn new(
         config: &'a Configuration,
         controllable_server: Box<dyn ControllableServer>,
+        pinger: Box<dyn Pinger>,
         always_on: Box<dyn AlwaysOn>,
     ) -> Self {
         let ping_interval = Duration::from_secs(config.network.ping.interval);
 
-        // create a pinger and its results receiver
-        let (pinger, pinger_results) = match Pinger::new(None, None) {
-            Ok((pinger, results)) => (pinger, results),
-            Err(e) => panic!("Failed to create pinger: {}", e),
-        };
+        let mut machines = Vec::new();
 
-        let mut machines: HashMap<IpAddr, Machine> = HashMap::new();
+        // get a mutable binding to pinger
+        let mut mut_pinger = pinger;
 
-        // add the IP address of the server and all machines to the pinger
-        pinger.add_ipaddr(&config.server.machine.ip);
+        // add the IP address of the server to the pinger
+        match mut_pinger.add_target(&config.server.machine.ip) {
+            Ok(false) => {
+                panic!(
+                    "failed to add {} ({}) to the pinger",
+                    config.server.machine.name, config.server.machine.ip
+                )
+            }
+            Err(e) => {
+                panic!(
+                    "failed to parse IP address of {} ({}): {}",
+                    config.server.machine.name, config.server.machine.ip, e
+                );
+            }
+            _ => (),
+        }
+
+        // add the IP address of all machines to the pinger
         for machine in config.machines.iter() {
-            let machine_ip = &machine.ip;
-
-            match machine_ip.parse() {
-                Ok(ip_addr) => {
-                    machines.insert(ip_addr, Machine::new(machine));
-                    pinger.add_ipaddr(machine_ip);
+            match mut_pinger.add_target(&machine.ip) {
+                Ok(true) => {
+                    machines.push(Machine::new(machine));
+                }
+                Ok(false) => {
+                    warn!(
+                        "failed to add {} ({}) to the pinger",
+                        machine.name, machine.ip
+                    )
                 }
                 Err(e) => {
-                    error!("failed to parse IP address of {}: {}", machine.name, e);
+                    error!(
+                        "failed to parse IP address of {} ({}): {}",
+                        machine.name, machine.ip, e
+                    );
                 }
             }
         }
 
-        let server_ip: IpAddr = match config.server.machine.ip.parse() {
-            Ok(ip_addr) => ip_addr,
-            Err(e) => {
-                panic!(
-                    "Failed to parse server IP address ({}): {}",
-                    config.server.machine.ip, e
-                );
-            }
-        };
-
         Monitor {
             controllable_server,
             server: Server::new(&config.server),
-            server_ip,
             machines,
             always_on_state: false,
             always_on,
             last_ping: Instant::now().sub(ping_interval),
             last_change: Instant::now().sub(CHANGE_TIMEOUT),
             ping_interval,
-            pinger,
-            pinger_results,
+            pinger: mut_pinger,
         }
     }
 
@@ -114,65 +115,26 @@ impl<'a> Monitor<'a> {
             // run the pinger once
             debug!("pinging {} machines...", num_machines);
             self.pinger.ping_once();
+            // and receive all responses (pongs)
+            if let Err(e) = self.pinger.recv_pong() {
+                panic!("Pinger failed to receive responses: {}", e)
+            }
 
-            // receive all results
-            for _ in 0..num_machines {
-                match self.pinger_results.recv() {
-                    Ok(result) => match result {
-                        Idle { addr } => {
-                            let machine: Option<&mut Machine>;
-                            if addr == self.server_ip {
-                                machine = Some(&mut self.server.machine);
-                            } else {
-                                machine = self.machines.get_mut(&addr);
-                            }
+            {
+                // update the online state of the server
+                let server_is_online = self.pinger.is_online(self.server.machine.ip);
+                Monitor::update_machine_online(&mut self.server.machine, server_is_online);
+            }
 
-                            match machine {
-                                Some(machine) => {
-                                    debug!(
-                                        "no ping response from {} ({})",
-                                        machine.name, machine.ip
-                                    );
-
-                                    // update the online state of the machine
-                                    Monitor::check_and_update_machine_online(machine, false);
-                                }
-                                None => {
-                                    warn!("received unexpected ping idle for {}", addr);
-                                }
-                            };
-                        }
-                        Receive { addr, .. } => {
-                            let machine: Option<&mut Machine>;
-                            if addr == self.server_ip {
-                                machine = Some(&mut self.server.machine);
-                            } else {
-                                machine = self.machines.get_mut(&addr);
-                            }
-
-                            match machine {
-                                Some(machine) => {
-                                    debug!(
-                                        "received ping response from {} ({})",
-                                        machine.name, machine.ip
-                                    );
-
-                                    // update the online state of the machine
-                                    Monitor::check_and_update_machine_online(machine, true);
-                                }
-                                None => {
-                                    warn!("received unexpected ping response from {}", addr);
-                                }
-                            };
-                        }
-                    },
-                    Err(e) => panic!("Pinger failed: {}", e),
-                };
+            // update the online state of all machines
+            for mut machine in self.machines.iter_mut() {
+                let is_online = self.pinger.is_online(machine.ip);
+                Monitor::update_machine_online(&mut machine, is_online);
             }
         }
 
         // check if any machine is online
-        let any_machine_is_online = self.machines.values().any(|machine| machine.is_online);
+        let any_machine_is_online = self.machines.iter().any(|machine| machine.is_online);
 
         // process the collected information
         if self.always_on_state || self.last_change.elapsed() > CHANGE_TIMEOUT {
@@ -202,18 +164,30 @@ impl<'a> Monitor<'a> {
         }
     }
 
-    fn check_and_update_machine_online(machine: &mut Machine, is_online: bool) {
+    fn update_machine_online(machine: &mut Machine, is_online: bool) {
         let machine_was_online = machine.is_online;
 
-        // update the servers online state
+        // update the machines online state
         //   either if it is currently online
         //   or if it has become offline
         if is_online {
+            debug!(
+                "received ping response from {} ({})",
+                machine.name, machine.ip
+            );
             machine.set_online(true)
-        } else if machine_was_online
-            && machine.last_seen.unwrap().elapsed() > Duration::from_secs(machine.last_seen_timeout)
-        {
-            machine.set_online(false)
+        } else {
+            debug!(
+                "no ping response received from {} ({})",
+                machine.name, machine.ip
+            );
+
+            if machine_was_online
+                && machine.last_seen.unwrap().elapsed()
+                    > Duration::from_secs(machine.last_seen_timeout)
+            {
+                machine.set_online(false)
+            }
         }
 
         if is_online != machine_was_online {

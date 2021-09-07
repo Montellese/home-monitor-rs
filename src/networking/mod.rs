@@ -1,7 +1,9 @@
 use pnet::datalink::{interfaces, NetworkInterface};
 
 pub mod controllable_server;
+pub mod fast_pinger;
 pub mod networking_error;
+pub mod pinger;
 pub mod shutdown_error;
 pub mod ssh2_server;
 
