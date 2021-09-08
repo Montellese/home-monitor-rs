@@ -33,7 +33,8 @@ struct Opts {
 fn run(
     args: Opts,
     config: configuration::Configuration,
-    controllable_server: Box<dyn networking::controllable_server::ControllableServer>,
+    wakeup_server: Box<dyn networking::wakeup_server::WakeupServer>,
+    shutdown_server: Box<dyn networking::shutdown_server::ShutdownServer>,
     pinger: Box<dyn networking::pinger::Pinger>,
     always_on: Box<dyn dom::always_on::AlwaysOn>,
 ) -> exitcode::ExitCode {
@@ -42,7 +43,7 @@ fn run(
     // check if a manual option (wakeup / shutdown) has been provided
     if args.wakeup {
         info!("waking up {}...", server.machine.name);
-        return match controllable_server.wakeup() {
+        return match wakeup_server.wakeup() {
             Err(_) => {
                 error!("failed to wake up {}", server.machine.name);
                 exitcode::UNAVAILABLE
@@ -54,7 +55,7 @@ fn run(
         };
     } else if args.shutdown {
         info!("shutting down {}...", server.machine.name);
-        return match controllable_server.shutdown() {
+        return match shutdown_server.shutdown() {
             Err(e) => {
                 error!("failed to shut down {}: {}", server.machine.name, e);
                 exitcode::UNAVAILABLE
@@ -65,13 +66,14 @@ fn run(
             }
         };
     } else {
-        process(config, controllable_server, pinger, always_on)
+        process(config, wakeup_server, shutdown_server, pinger, always_on)
     }
 }
 
 fn process(
     config: configuration::Configuration,
-    controllable_server: Box<dyn networking::controllable_server::ControllableServer>,
+    wakeup_server: Box<dyn networking::wakeup_server::WakeupServer>,
+    shutdown_server: Box<dyn networking::shutdown_server::ShutdownServer>,
     pinger: Box<dyn networking::pinger::Pinger>,
     always_on: Box<dyn dom::always_on::AlwaysOn>,
 ) -> exitcode::ExitCode {
@@ -82,7 +84,8 @@ fn process(
         return exitcode::SOFTWARE;
     }
 
-    let mut monitor = monitor::Monitor::new(&config, controllable_server, pinger, always_on);
+    let mut monitor =
+        monitor::Monitor::new(&config, wakeup_server, shutdown_server, pinger, always_on);
 
     while !term.load(Ordering::Relaxed) {
         monitor.run_once();
@@ -171,17 +174,31 @@ fn main() {
     info!("");
     info!("monitoring the network for activity...");
 
+    let server = dom::machine::Server::new(&config.server);
+
     // instantiate an AlwaysOnFile
     let always_on = Box::new(dom::always_on_file::AlwaysOnFile::new(&config.files));
 
-    // instantiate an Ssh2Server
-    let controllable_server = Box::new(networking::ssh2_server::Ssh2Server::new(
-        dom::machine::Server::new(&config.server),
+    // instantiate a WakeOnLanServer
+    let wakeup_server = Box::new(networking::wake_on_lan_server::WakeOnLanServer::new(
+        &server,
+    ));
+
+    // instantiate a Ssh2ShutdownServer
+    let shutdown_server = Box::new(networking::ssh2_shutdown_server::Ssh2ShutdownServer::new(
+        &server,
     ));
 
     // instantiate the FastPinger
     let pinger = Box::new(networking::fast_pinger::FastPinger::new(None));
 
     // run the monitoring process
-    std::process::exit(run(args, config, controllable_server, pinger, always_on));
+    std::process::exit(run(
+        args,
+        config,
+        wakeup_server,
+        shutdown_server,
+        pinger,
+        always_on,
+    ));
 }

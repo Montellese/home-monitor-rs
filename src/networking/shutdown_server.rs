@@ -1,6 +1,5 @@
 use super::shutdown_error::ShutdownError;
 
-pub trait ControllableServer {
-    fn wakeup(&self) -> std::io::Result<()>;
+pub trait ShutdownServer {
     fn shutdown(&self) -> Result<(), ShutdownError>;
 }

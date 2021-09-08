@@ -1,11 +1,13 @@
 use pnet::datalink::{interfaces, NetworkInterface};
 
-pub mod controllable_server;
 pub mod fast_pinger;
 pub mod networking_error;
 pub mod pinger;
 pub mod shutdown_error;
-pub mod ssh2_server;
+pub mod shutdown_server;
+pub mod ssh2_shutdown_server;
+pub mod wake_on_lan_server;
+pub mod wakeup_server;
 
 pub fn get_network_interface(
     interface_name: &str,

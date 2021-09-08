@@ -1,8 +1,9 @@
 use super::configuration::Configuration;
 use super::dom::always_on::AlwaysOn;
 use super::dom::machine::{Machine, Server};
-use super::networking::controllable_server::ControllableServer;
 use super::networking::pinger::Pinger;
+use super::networking::shutdown_server::ShutdownServer;
+use super::networking::wakeup_server::WakeupServer;
 
 use log::{debug, error, info, warn};
 
@@ -12,9 +13,11 @@ use std::time::{Duration, Instant};
 const CHANGE_TIMEOUT: Duration = Duration::from_secs(120);
 
 pub struct Monitor<'a> {
-    controllable_server: Box<dyn ControllableServer>,
     server: Server<'a>,
     machines: Vec<Machine<'a>>,
+
+    wakeup_server: Box<dyn WakeupServer>,
+    shutdown_server: Box<dyn ShutdownServer>,
 
     always_on_state: bool,
     always_on: Box<dyn AlwaysOn>,
@@ -28,7 +31,8 @@ pub struct Monitor<'a> {
 impl<'a> Monitor<'a> {
     pub fn new(
         config: &'a Configuration,
-        controllable_server: Box<dyn ControllableServer>,
+        wakeup_server: Box<dyn WakeupServer>,
+        shutdown_server: Box<dyn ShutdownServer>,
         pinger: Box<dyn Pinger>,
         always_on: Box<dyn AlwaysOn>,
     ) -> Self {
@@ -78,9 +82,10 @@ impl<'a> Monitor<'a> {
         }
 
         Monitor {
-            controllable_server,
             server: Server::new(&config.server),
             machines,
+            wakeup_server,
+            shutdown_server,
             always_on_state: false,
             always_on,
             last_ping: Instant::now().sub(ping_interval),
@@ -146,7 +151,7 @@ impl<'a> Monitor<'a> {
             // then wake the server up
             if !self.server.machine.is_online && (self.always_on_state || any_machine_is_online) {
                 info!("waking up {}...", server.machine.name);
-                match self.controllable_server.wakeup() {
+                match self.wakeup_server.wakeup() {
                     Err(_) => error!("failed to wake up {}", server.machine.name),
                     Ok(_) => {
                         self.last_change = Instant::now();
@@ -154,7 +159,7 @@ impl<'a> Monitor<'a> {
                 }
             } else if !self.always_on_state && !any_machine_is_online && server.machine.is_online {
                 info!("shutting down {}...", server.machine.name);
-                match self.controllable_server.shutdown() {
+                match self.shutdown_server.shutdown() {
                     Err(e) => error!("failed to shut down {}: {}", server.machine.name, e),
                     Ok(_) => {
                         self.last_change = Instant::now();
