@@ -13,11 +13,17 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         rust:
           - stable
           - beta
           - nightly
+        experimental: [false]
+        include:
+          - rust: nightly
+            experimental: true
+    continue-on-error: ${{ matrix.experimental }}
 
     steps:
       - uses: actions/checkout@v2
