@@ -17,7 +17,7 @@ pub struct Machine {
 
 impl Machine {
     #[allow(dead_code)]
-    pub fn new() -> Machine {
+    pub fn new() -> Self {
         Machine::default()
     }
 
@@ -42,7 +42,7 @@ pub struct Server {
 
 impl Server {
     #[allow(dead_code)]
-    pub fn new() -> Server {
+    pub fn new() -> Self {
         Server::default()
     }
 }

@@ -31,7 +31,7 @@ pub struct Monitor {
 }
 
 impl Monitor {
-    pub fn new(config: Configuration) -> Monitor {
+    pub fn new(config: Configuration) -> Self {
         let ping_interval = Duration::from_secs(config.network.ping.interval);
 
         // create a pinger and its results receiver
