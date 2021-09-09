@@ -1,6 +1,7 @@
 use super::super::configuration;
 
 use std::convert::From;
+use std::fmt;
 use std::time::Instant;
 
 #[derive(Clone, Debug)]
@@ -48,6 +49,24 @@ impl From<&configuration::machine::Machine> for Machine {
     }
 }
 
+impl fmt::Display for Machine {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} ({}) ", self.name, self.ip)?;
+        match self.last_seen {
+            None => {
+                write!(f, "🯄")
+            }
+            Some(_) => {
+                if self.is_online {
+                    write!(f, "↑")
+                } else {
+                    write!(f, "↓")
+                }
+            }
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Server {
     pub machine: Machine,
@@ -81,5 +100,11 @@ impl From<&configuration::machine::Server> for Server {
             username: server.username.clone(),
             password: server.password.clone(),
         }
+    }
+}
+
+impl fmt::Display for Server {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}@{}", self.username, self.machine)
     }
 }

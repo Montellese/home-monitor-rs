@@ -43,16 +43,10 @@ impl Monitor {
         // add the IP address of the server to the pinger
         match mut_pinger.add_target(&server.machine.ip) {
             Ok(false) => {
-                panic!(
-                    "failed to add {} ({}) to the pinger",
-                    server.machine.name, server.machine.ip
-                )
+                panic!("failed to add {} to the pinger", server)
             }
             Err(e) => {
-                panic!(
-                    "failed to parse IP address of {} ({}): {}",
-                    server.machine.name, server.machine.ip, e
-                );
+                panic!("failed to parse IP address of {}: {}", server, e);
             }
             _ => (),
         }
@@ -64,21 +58,19 @@ impl Monitor {
             return match mut_pinger.add_target(&machine.ip) {
                 Ok(true) => true,
                 Ok(false) => {
-                    warn!(
-                        "failed to add {} ({}) to the pinger",
-                        machine.name, machine.ip
-                    );
+                    warn!("failed to add {} to the pinger", machine);
                     false
                 }
                 Err(e) => {
-                    error!(
-                        "failed to parse IP address of {} ({}): {}",
-                        machine.name, machine.ip, e
-                    );
+                    error!("failed to parse IP address of {}: {}", machine, e);
                     false
                 }
             };
         });
+
+        if mut_machines.is_empty() {
+            panic!("no machines to monitor {}", server);
+        }
 
         Monitor {
             server,
@@ -142,24 +134,25 @@ impl Monitor {
 
         // process the collected information
         if self.always_on_state || self.last_change.elapsed() > CHANGE_TIMEOUT {
-            let server = &self.server;
-
             // if the server is not online and
             //   the always on file exists or
             //   any machine is online
             // then wake the server up
             if !self.server.machine.is_online && (self.always_on_state || any_machine_is_online) {
-                info!("waking up {}...", server.machine.name);
+                info!("waking up {}...", self.server);
                 match self.wakeup_server.wakeup() {
-                    Err(_) => error!("failed to wake up {}", server.machine.name),
+                    Err(_) => error!("failed to wake up {}", self.server),
                     Ok(_) => {
                         self.last_change = Instant::now();
                     }
                 }
-            } else if !self.always_on_state && !any_machine_is_online && server.machine.is_online {
-                info!("shutting down {}...", server.machine.name);
+            } else if !self.always_on_state
+                && !any_machine_is_online
+                && self.server.machine.is_online
+            {
+                info!("shutting down {}...", self.server);
                 match self.shutdown_server.shutdown() {
-                    Err(e) => error!("failed to shut down {}: {}", server.machine.name, e),
+                    Err(e) => error!("failed to shut down {}: {}", self.server, e),
                     Ok(_) => {
                         self.last_change = Instant::now();
                     }
@@ -175,16 +168,10 @@ impl Monitor {
         //   either if it is currently online
         //   or if it has become offline
         if is_online {
-            debug!(
-                "received ping response from {} ({})",
-                machine.name, machine.ip
-            );
+            debug!("received ping response from {}", machine);
             machine.set_online(true)
         } else {
-            debug!(
-                "no ping response received from {} ({})",
-                machine.name, machine.ip
-            );
+            debug!("no ping response received from {}", machine);
 
             if machine_was_online
                 && machine.last_seen.unwrap().elapsed()
@@ -196,9 +183,9 @@ impl Monitor {
 
         if is_online != machine_was_online {
             if is_online {
-                info!("{} ({}) is now online", machine.name, machine.ip);
+                info!("{} is now online", machine);
             } else {
-                info!("{} ({}) is now offline", machine.name, machine.ip);
+                info!("{} is now offline", machine);
             }
         }
     }
