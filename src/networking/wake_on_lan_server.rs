@@ -11,7 +11,7 @@ pub struct WakeOnLanServer {
 
 impl WakeOnLanServer {
     pub fn new(server: &machine::Server) -> Self {
-        WakeOnLanServer {
+        Self {
             name: server.machine.name.to_string(),
             mac: server.machine.mac.to_string(),
         }

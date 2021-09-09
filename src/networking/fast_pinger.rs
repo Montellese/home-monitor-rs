@@ -24,7 +24,7 @@ impl FastPinger {
 
         let targets: HashMap<String, bool> = HashMap::new();
 
-        FastPinger {
+        Self {
             pinger,
             pinger_results,
             targets,
@@ -32,7 +32,7 @@ impl FastPinger {
     }
 
     fn set_online(&mut self, ip_addr: &IpAddr, is_online: bool) {
-        let addr = FastPinger::ip_to_string(ip_addr);
+        let addr = Self::ip_to_string(ip_addr);
 
         let target_is_online = match self.targets.get_mut(&addr) {
             Some(target) => target,
@@ -48,7 +48,7 @@ impl FastPinger {
     fn normalize_ip(ip_addr: &str) -> Result<String, AddrParseError> {
         let addr: IpAddr = ip_addr.parse()?;
 
-        Ok(FastPinger::ip_to_string(&addr))
+        Ok(Self::ip_to_string(&addr))
     }
 
     fn ip_to_string(ip_addr: &IpAddr) -> String {
@@ -59,7 +59,7 @@ impl FastPinger {
 impl Pinger for FastPinger {
     fn add_target(&mut self, ip_addr: &str) -> Result<bool, AddrParseError> {
         // normalize the IP address
-        let addr = FastPinger::normalize_ip(ip_addr)?;
+        let addr = Self::normalize_ip(ip_addr)?;
 
         // only add the target IP address if it doesn't already exist
         if self.targets.get(&addr).is_none() {
@@ -104,7 +104,7 @@ impl Pinger for FastPinger {
 
     fn is_online(&self, ip_addr: &str) -> bool {
         // normalize the IP address
-        let addr = match FastPinger::normalize_ip(ip_addr) {
+        let addr = match Self::normalize_ip(ip_addr) {
             Ok(normalized_addr) => normalized_addr,
             Err(e) => {
                 error!("failed to parse IP address {}: {}", ip_addr, e);

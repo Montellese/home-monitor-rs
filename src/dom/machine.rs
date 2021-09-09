@@ -17,7 +17,7 @@ pub struct Machine {
 impl Machine {
     #[allow(dead_code)]
     pub fn new(name: &str, mac: &str, ip: &str, last_seen_timeout: u64) -> Self {
-        Machine {
+        Self {
             name: name.to_string(),
             mac: mac.to_string(),
             ip: ip.to_string(),
@@ -37,7 +37,7 @@ impl Machine {
 
 impl From<&configuration::machine::Machine> for Machine {
     fn from(machine: &configuration::machine::Machine) -> Self {
-        Machine {
+        Self {
             name: machine.name.clone(),
             mac: machine.mac.clone(),
             ip: machine.ip.clone(),
@@ -66,7 +66,7 @@ impl Server {
         username: &str,
         password: &str,
     ) -> Self {
-        Server {
+        Self {
             machine: Machine::new(name, mac, ip, last_seen_timeout),
             username: username.to_string(),
             password: password.to_string(),
@@ -76,7 +76,7 @@ impl Server {
 
 impl From<&configuration::machine::Server> for Server {
     fn from(server: &configuration::machine::Server) -> Self {
-        Server {
+        Self {
             machine: Machine::from(&server.machine),
             username: server.username.clone(),
             password: server.password.clone(),

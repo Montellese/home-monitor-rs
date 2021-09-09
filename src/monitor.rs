@@ -127,13 +127,13 @@ impl Monitor {
             {
                 // update the online state of the server
                 let server_is_online = self.pinger.is_online(&self.server.machine.ip);
-                Monitor::update_machine_online(&mut self.server.machine, server_is_online);
+                Self::update_machine_online(&mut self.server.machine, server_is_online);
             }
 
             // update the online state of all machines
             for mut machine in self.machines.iter_mut() {
                 let is_online = self.pinger.is_online(&machine.ip);
-                Monitor::update_machine_online(&mut machine, is_online);
+                Self::update_machine_online(&mut machine, is_online);
             }
         }
 

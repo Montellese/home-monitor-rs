@@ -9,6 +9,6 @@ pub struct Files {
 impl Files {
     #[allow(dead_code)]
     pub fn new() -> Self {
-        Files::default()
+        Self::default()
     }
 }

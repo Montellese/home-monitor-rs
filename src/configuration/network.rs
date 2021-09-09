@@ -10,7 +10,7 @@ pub struct Ping {
 impl Ping {
     #[allow(dead_code)]
     pub fn new() -> Self {
-        Ping::default()
+        Self::default()
     }
 }
 
@@ -24,6 +24,6 @@ pub struct Network {
 impl Network {
     #[allow(dead_code)]
     pub fn new() -> Self {
-        Network::default()
+        Self::default()
     }
 }

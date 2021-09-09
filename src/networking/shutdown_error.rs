@@ -5,7 +5,7 @@ pub struct ShutdownError(String);
 
 impl ShutdownError {
     pub fn new(error_msg: String) -> Self {
-        ShutdownError(error_msg)
+        Self(error_msg)
     }
 }
 

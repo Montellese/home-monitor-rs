@@ -16,7 +16,7 @@ pub struct Ssh2ShutdownServer {
 
 impl Ssh2ShutdownServer {
     pub fn new(server: &machine::Server) -> Self {
-        Ssh2ShutdownServer {
+        Self {
             name: server.machine.name.to_string(),
             ip: server.machine.ip.to_string(),
             username: server.username.to_string(),
@@ -31,7 +31,7 @@ impl Ssh2ShutdownServer {
     fn handle_shutdown_error<T>(result: Result<T, ssh2::Error>) -> Result<T, ShutdownError> {
         match result {
             Ok(r) => Ok(r),
-            Err(e) => Err(Ssh2ShutdownServer::ssh2_to_shutdown_error(e)),
+            Err(e) => Err(Self::ssh2_to_shutdown_error(e)),
         }
     }
 }
@@ -43,22 +43,20 @@ impl ShutdownServer for Ssh2ShutdownServer {
             Ok(s) => s,
             Err(e) => return Err(ShutdownError::new(format!("{}", e))),
         };
-        let mut session = Ssh2ShutdownServer::handle_shutdown_error(Session::new())?;
+        let mut session = Self::handle_shutdown_error(Session::new())?;
         session.set_tcp_stream(tcp);
-        Ssh2ShutdownServer::handle_shutdown_error(session.handshake())?;
+        Self::handle_shutdown_error(session.handshake())?;
 
         debug!(
             "authenticating SSH session to {} for {}",
             self.name, self.username
         );
-        Ssh2ShutdownServer::handle_shutdown_error(
-            session.userauth_password(&self.username, &self.password),
-        )?;
+        Self::handle_shutdown_error(session.userauth_password(&self.username, &self.password))?;
 
         debug!("executing \"shutdown -h now\" on {}", self.name);
-        let mut channel = Ssh2ShutdownServer::handle_shutdown_error(session.channel_session())?;
-        Ssh2ShutdownServer::handle_shutdown_error(channel.exec("shutdown -h now"))?;
+        let mut channel = Self::handle_shutdown_error(session.channel_session())?;
+        Self::handle_shutdown_error(channel.exec("shutdown -h now"))?;
 
-        Ssh2ShutdownServer::handle_shutdown_error(channel.wait_close())
+        Self::handle_shutdown_error(channel.wait_close())
     }
 }

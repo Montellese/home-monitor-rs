@@ -10,7 +10,7 @@ pub struct AlwaysOnFile {
 
 impl AlwaysOnFile {
     pub fn new(files: &files::Files) -> Self {
-        AlwaysOnFile {
+        Self {
             file: PathBuf::from(files.always_on.clone()),
         }
     }
