@@ -1,5 +1,6 @@
-use super::super::configuration::machine;
+use super::super::configuration;
 
+use std::convert::From;
 use std::time::Instant;
 
 #[derive(Clone, Debug)]
@@ -15,7 +16,27 @@ pub struct Machine {
 
 impl Machine {
     #[allow(dead_code)]
-    pub fn new(machine: &machine::Machine) -> Self {
+    pub fn new(name: &str, mac: &str, ip: &str, last_seen_timeout: u64) -> Self {
+        Machine {
+            name: name.to_string(),
+            mac: mac.to_string(),
+            ip: ip.to_string(),
+            last_seen_timeout,
+            is_online: false,
+            last_seen: None,
+        }
+    }
+
+    pub fn set_online(&mut self, online: bool) {
+        self.is_online = online;
+        if online {
+            self.last_seen = Some(Instant::now());
+        }
+    }
+}
+
+impl From<&configuration::machine::Machine> for Machine {
+    fn from(machine: &configuration::machine::Machine) -> Self {
         Machine {
             name: machine.name.clone(),
             mac: machine.mac.clone(),
@@ -23,14 +44,6 @@ impl Machine {
             last_seen_timeout: machine.last_seen_timeout,
             is_online: false,
             last_seen: None,
-        }
-    }
-
-    #[allow(dead_code)]
-    pub fn set_online(&mut self, online: bool) {
-        self.is_online = online;
-        if online {
-            self.last_seen = Some(Instant::now());
         }
     }
 }
@@ -45,9 +58,26 @@ pub struct Server {
 
 impl Server {
     #[allow(dead_code)]
-    pub fn new(server: &machine::Server) -> Self {
+    pub fn new(
+        name: &str,
+        mac: &str,
+        ip: &str,
+        last_seen_timeout: u64,
+        username: &str,
+        password: &str,
+    ) -> Self {
         Server {
-            machine: Machine::new(&server.machine),
+            machine: Machine::new(name, mac, ip, last_seen_timeout),
+            username: username.to_string(),
+            password: password.to_string(),
+        }
+    }
+}
+
+impl From<&configuration::machine::Server> for Server {
+    fn from(server: &configuration::machine::Server) -> Self {
+        Server {
+            machine: Machine::from(&server.machine),
             username: server.username.clone(),
             password: server.password.clone(),
         }

@@ -30,16 +30,17 @@ struct Opts {
     wakeup: bool,
 }
 
+#[allow(clippy::too_many_arguments)]
 fn run(
     args: Opts,
-    config: configuration::Configuration,
+    ping_interval: Duration,
+    server: dom::machine::Server,
+    machines: Vec<dom::machine::Machine>,
     wakeup_server: Box<dyn networking::wakeup_server::WakeupServer>,
     shutdown_server: Box<dyn networking::shutdown_server::ShutdownServer>,
     pinger: Box<dyn networking::pinger::Pinger>,
     always_on: Box<dyn dom::always_on::AlwaysOn>,
 ) -> exitcode::ExitCode {
-    let server = &config.server;
-
     // check if a manual option (wakeup / shutdown) has been provided
     if args.wakeup {
         info!("waking up {}...", server.machine.name);
@@ -66,12 +67,22 @@ fn run(
             }
         };
     } else {
-        process(config, wakeup_server, shutdown_server, pinger, always_on)
+        process(
+            ping_interval,
+            server,
+            machines,
+            wakeup_server,
+            shutdown_server,
+            pinger,
+            always_on,
+        )
     }
 }
 
 fn process(
-    config: configuration::Configuration,
+    ping_interval: Duration,
+    server: dom::machine::Server,
+    machines: Vec<dom::machine::Machine>,
     wakeup_server: Box<dyn networking::wakeup_server::WakeupServer>,
     shutdown_server: Box<dyn networking::shutdown_server::ShutdownServer>,
     pinger: Box<dyn networking::pinger::Pinger>,
@@ -84,8 +95,15 @@ fn process(
         return exitcode::SOFTWARE;
     }
 
-    let mut monitor =
-        monitor::Monitor::new(&config, wakeup_server, shutdown_server, pinger, always_on);
+    let mut monitor = monitor::Monitor::new(
+        ping_interval,
+        server,
+        machines,
+        wakeup_server,
+        shutdown_server,
+        pinger,
+        always_on,
+    );
 
     while !term.load(Ordering::Relaxed) {
         monitor.run_once();
@@ -131,9 +149,16 @@ fn main() {
         Ok(r) => r,
     };
 
-    // log the always on file
-    let files = &config.files;
-    info!("always on: {}", files.always_on);
+    if config.machines.is_empty() {
+        error!("configuration doesn't contain any machines to monitor");
+        std::process::exit(exitcode::CONFIG);
+    }
+
+    {
+        // log the always on file
+        let files = &config.files;
+        info!("always on: {}", files.always_on);
+    }
 
     // log the details of the configured network interface
     info!(
@@ -145,39 +170,51 @@ fn main() {
         info!("  {}", ip);
     }
 
-    // log the ping configuration
-    let ping = &config.network.ping;
-    info!("ping: every {}s for {}s", ping.interval, ping.timeout);
+    {
+        // log the ping configuration
+        let ping = &config.network.ping;
+        info!("ping: every {}s for {}s", ping.interval, ping.timeout);
+    }
 
-    // log the details of the configured server
-    let server = &config.server;
-    info!("server:");
-    info!(
-        "  {}@{}: {} [{}] ({}s)",
-        server.username,
-        server.machine.name,
-        server.machine.ip,
-        server.machine.mac,
-        server.machine.last_seen_timeout
-    );
-
-    // log the details of the configured machines
-    let machines = &config.machines;
-    info!("machines ({}):", machines.len());
-    for machine in machines.iter() {
+    {
+        // log the details of the configured server
+        let server = &config.server;
+        info!("server:");
         info!(
-            "  {}: {} [{}] ({}s)",
-            machine.name, machine.ip, machine.mac, machine.last_seen_timeout
+            "  {}@{}: {} [{}] ({}s)",
+            server.username,
+            server.machine.name,
+            server.machine.ip,
+            server.machine.mac,
+            server.machine.last_seen_timeout
         );
+    }
+
+    {
+        // log the details of the configured machines
+        let machines = &config.machines;
+        info!("machines ({}):", machines.len());
+        for machine in machines.iter() {
+            info!(
+                "  {}: {} [{}] ({}s)",
+                machine.name, machine.ip, machine.mac, machine.last_seen_timeout
+            );
+        }
     }
 
     info!("");
     info!("monitoring the network for activity...");
 
-    let server = dom::machine::Server::new(&config.server);
+    let ping_interval = Duration::from_secs(config.network.ping.interval);
 
-    // instantiate an AlwaysOnFile
-    let always_on = Box::new(dom::always_on_file::AlwaysOnFile::new(&config.files));
+    // create the server DOM object from the parsed configuration
+    let server = dom::machine::Server::from(&config.server);
+
+    // create the machine DOM objects from the parsed configuration
+    let mut machines = Vec::new();
+    for machine in config.machines.iter() {
+        machines.push(dom::machine::Machine::from(machine));
+    }
 
     // instantiate a WakeOnLanServer
     let wakeup_server = Box::new(networking::wake_on_lan_server::WakeOnLanServer::new(
@@ -192,10 +229,15 @@ fn main() {
     // instantiate the FastPinger
     let pinger = Box::new(networking::fast_pinger::FastPinger::new(None));
 
+    // instantiate an AlwaysOnFile
+    let always_on = Box::new(dom::always_on_file::AlwaysOnFile::new(&config.files));
+
     // run the monitoring process
     std::process::exit(run(
         args,
-        config,
+        ping_interval,
+        server,
+        machines,
         wakeup_server,
         shutdown_server,
         pinger,

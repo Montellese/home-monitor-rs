@@ -1,4 +1,3 @@
-use super::configuration::Configuration;
 use super::dom::always_on::AlwaysOn;
 use super::dom::machine::{Machine, Server};
 use super::networking::pinger::Pinger;
@@ -12,9 +11,9 @@ use std::time::{Duration, Instant};
 
 const CHANGE_TIMEOUT: Duration = Duration::from_secs(120);
 
-pub struct Monitor<'a> {
-    server: Server<'a>,
-    machines: Vec<Machine<'a>>,
+pub struct Monitor {
+    server: Server,
+    machines: Vec<Machine>,
 
     wakeup_server: Box<dyn WakeupServer>,
     shutdown_server: Box<dyn ShutdownServer>,
@@ -28,62 +27,62 @@ pub struct Monitor<'a> {
     pinger: Box<dyn Pinger>,
 }
 
-impl<'a> Monitor<'a> {
+impl Monitor {
     pub fn new(
-        config: &'a Configuration,
+        ping_interval: Duration,
+        server: Server,
+        machines: Vec<Machine>,
         wakeup_server: Box<dyn WakeupServer>,
         shutdown_server: Box<dyn ShutdownServer>,
         pinger: Box<dyn Pinger>,
         always_on: Box<dyn AlwaysOn>,
     ) -> Self {
-        let ping_interval = Duration::from_secs(config.network.ping.interval);
-
-        let mut machines = Vec::new();
-
         // get a mutable binding to pinger
         let mut mut_pinger = pinger;
 
         // add the IP address of the server to the pinger
-        match mut_pinger.add_target(&config.server.machine.ip) {
+        match mut_pinger.add_target(&server.machine.ip) {
             Ok(false) => {
                 panic!(
                     "failed to add {} ({}) to the pinger",
-                    config.server.machine.name, config.server.machine.ip
+                    server.machine.name, server.machine.ip
                 )
             }
             Err(e) => {
                 panic!(
                     "failed to parse IP address of {} ({}): {}",
-                    config.server.machine.name, config.server.machine.ip, e
+                    server.machine.name, server.machine.ip, e
                 );
             }
             _ => (),
         }
 
+        let mut mut_machines = machines;
+
         // add the IP address of all machines to the pinger
-        for machine in config.machines.iter() {
-            match mut_pinger.add_target(&machine.ip) {
-                Ok(true) => {
-                    machines.push(Machine::new(machine));
-                }
+        mut_machines.retain(|machine: &Machine| {
+            return match mut_pinger.add_target(&machine.ip) {
+                Ok(true) => true,
                 Ok(false) => {
                     warn!(
                         "failed to add {} ({}) to the pinger",
                         machine.name, machine.ip
-                    )
+                    );
+                    false
                 }
                 Err(e) => {
                     error!(
                         "failed to parse IP address of {} ({}): {}",
                         machine.name, machine.ip, e
                     );
+                    false
                 }
-            }
-        }
+            };
+        });
 
         Monitor {
-            server: Server::new(&config.server),
-            machines,
+            server,
+            machines: mut_machines,
             wakeup_server,
             shutdown_server,
             always_on_state: false,
@@ -127,13 +126,13 @@ impl<'a> Monitor<'a> {
 
             {
                 // update the online state of the server
-                let server_is_online = self.pinger.is_online(self.server.machine.ip);
+                let server_is_online = self.pinger.is_online(&self.server.machine.ip);
                 Monitor::update_machine_online(&mut self.server.machine, server_is_online);
             }
 
             // update the online state of all machines
             for mut machine in self.machines.iter_mut() {
-                let is_online = self.pinger.is_online(machine.ip);
+                let is_online = self.pinger.is_online(&machine.ip);
                 Monitor::update_machine_online(&mut machine, is_online);
             }
         }
