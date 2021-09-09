@@ -196,6 +196,7 @@ dependencies = [
  "serde_json",
  "signal-hook",
  "simplelog",
+ "sn_fake_clock",
  "ssh2",
  "wakey",
 ]
@@ -753,6 +754,12 @@ name = "smallvec"
 version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fe0f37c9e8f3c5a4a66ad655a93c74daac4ad00c441533bf5c6e7990bb42604e"
+
+[[package]]
+name = "sn_fake_clock"
+version = "0.4.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2407d5b1cfd7dd5f3a9d2fa04484473fb9cfe939e701d18a3aa14e15671cb83"
 
 [[package]]
 name = "ssh2"

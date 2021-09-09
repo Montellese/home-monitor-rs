@@ -18,3 +18,6 @@ signal-hook = "0.3.4"
 simplelog = { version = "0.9.0", default-features = false }
 ssh2 = "0.9.1"
 wakey = "0.1.2"
+
+[dev-dependencies]
+sn_fake_clock = "0.4.14"

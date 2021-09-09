@@ -3,11 +3,12 @@ use super::networking::pinger::Pinger;
 use super::networking::shutdown_server::ShutdownServer;
 use super::networking::wakeup_server::WakeupServer;
 use super::utils::always_on::AlwaysOn;
+use super::utils::Instant;
 
 use log::{debug, error, info, warn};
 
 use std::ops::Sub;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 const CHANGE_TIMEOUT: Duration = Duration::from_secs(120);
 
@@ -72,6 +73,10 @@ impl Monitor {
             panic!("no machines to monitor {}", server);
         }
 
+        let now = Instant::now();
+        let last_ping = now.sub(ping_interval);
+        let last_change = now.sub(CHANGE_TIMEOUT);
+
         Monitor {
             server,
             machines: mut_machines,
@@ -79,8 +84,8 @@ impl Monitor {
             shutdown_server,
             always_on_state: false,
             always_on,
-            last_ping: Instant::now().sub(ping_interval),
-            last_change: Instant::now().sub(CHANGE_TIMEOUT),
+            last_ping,
+            last_change,
             ping_interval,
             pinger: mut_pinger,
         }

@@ -1,8 +1,8 @@
 use super::super::configuration;
+use super::super::utils::Instant;
 
 use std::convert::From;
 use std::fmt;
-use std::time::Instant;
 
 #[derive(Clone, Debug)]
 pub struct Machine {
