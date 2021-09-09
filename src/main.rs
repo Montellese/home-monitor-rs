@@ -12,6 +12,7 @@ mod configuration;
 mod dom;
 mod monitor;
 mod networking;
+mod utils;
 
 #[derive(Clap)]
 #[clap(version = clap::crate_version!(), author = clap::crate_authors!())]
@@ -39,7 +40,7 @@ fn run(
     wakeup_server: Box<dyn networking::wakeup_server::WakeupServer>,
     shutdown_server: Box<dyn networking::shutdown_server::ShutdownServer>,
     pinger: Box<dyn networking::pinger::Pinger>,
-    always_on: Box<dyn dom::always_on::AlwaysOn>,
+    always_on: Box<dyn utils::always_on::AlwaysOn>,
 ) -> exitcode::ExitCode {
     // check if a manual option (wakeup / shutdown) has been provided
     if args.wakeup {
@@ -86,7 +87,7 @@ fn process(
     wakeup_server: Box<dyn networking::wakeup_server::WakeupServer>,
     shutdown_server: Box<dyn networking::shutdown_server::ShutdownServer>,
     pinger: Box<dyn networking::pinger::Pinger>,
-    always_on: Box<dyn dom::always_on::AlwaysOn>,
+    always_on: Box<dyn utils::always_on::AlwaysOn>,
 ) -> exitcode::ExitCode {
     debug!("setting up signal handling for SIGTERM");
     let term = Arc::new(AtomicBool::new(false));
@@ -230,7 +231,7 @@ fn main() {
     let pinger = Box::new(networking::fast_pinger::FastPinger::new(None));
 
     // instantiate an AlwaysOnFile
-    let always_on = Box::new(dom::always_on_file::AlwaysOnFile::new(&config.files));
+    let always_on = Box::new(utils::always_on_file::AlwaysOnFile::new(&config.files));
 
     // run the monitoring process
     std::process::exit(run(

@@ -1,8 +1,8 @@
-use super::dom::always_on::AlwaysOn;
 use super::dom::machine::{Machine, Server};
 use super::networking::pinger::Pinger;
 use super::networking::shutdown_server::ShutdownServer;
 use super::networking::wakeup_server::WakeupServer;
+use super::utils::always_on::AlwaysOn;
 
 use log::{debug, error, info, warn};
 
