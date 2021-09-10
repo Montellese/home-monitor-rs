@@ -20,4 +20,6 @@ ssh2 = "0.9.1"
 wakey = "0.1.2"
 
 [dev-dependencies]
+mockall = "0.10.2"
+rstest = "0.11.0"
 sn_fake_clock = "0.4.14"

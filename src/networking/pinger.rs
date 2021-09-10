@@ -1,6 +1,10 @@
 use std::net::AddrParseError;
 use std::sync::mpsc::RecvError;
 
+#[cfg(test)]
+use mockall::automock;
+
+#[cfg_attr(test, automock)]
 pub trait Pinger {
     fn add_target(&mut self, ip_addr: &str) -> Result<bool, AddrParseError>;
 
