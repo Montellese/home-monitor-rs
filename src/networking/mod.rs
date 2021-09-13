@@ -1,13 +1,28 @@
 use pnet::datalink::{interfaces, NetworkInterface};
 
-pub mod fast_pinger;
-pub mod networking_error;
-pub mod pinger;
-pub mod shutdown_error;
-pub mod shutdown_server;
-pub mod ssh2_shutdown_server;
-pub mod wake_on_lan_server;
-pub mod wakeup_server;
+mod fast_pinger;
+mod networking_error;
+mod pinger;
+mod shutdown_error;
+mod shutdown_server;
+mod ssh2_shutdown_server;
+mod wake_on_lan_server;
+mod wakeup_server;
+
+pub use fast_pinger::FastPinger;
+pub use networking_error::NetworkingError;
+#[cfg(test)]
+pub use pinger::MockPinger;
+pub use pinger::Pinger;
+pub use shutdown_error::ShutdownError;
+#[cfg(test)]
+pub use shutdown_server::MockShutdownServer;
+pub use shutdown_server::ShutdownServer;
+pub use ssh2_shutdown_server::Ssh2ShutdownServer;
+pub use wake_on_lan_server::WakeOnLanServer;
+#[cfg(test)]
+pub use wakeup_server::MockWakeupServer;
+pub use wakeup_server::WakeupServer;
 
 pub fn get_network_interface(
     interface_name: &str,

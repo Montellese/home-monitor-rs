@@ -1,4 +1,4 @@
-use super::super::dom::machine;
+use super::super::dom;
 
 use super::shutdown_error::ShutdownError;
 use super::shutdown_server::ShutdownServer;
@@ -15,7 +15,7 @@ pub struct Ssh2ShutdownServer {
 }
 
 impl Ssh2ShutdownServer {
-    pub fn new(server: &machine::Server) -> Self {
+    pub fn new(server: &dom::Server) -> Self {
         Self {
             name: server.machine.name.to_string(),
             ip: server.machine.ip.to_string(),

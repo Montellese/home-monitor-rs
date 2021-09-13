@@ -22,8 +22,8 @@ impl AlwaysOn for AlwaysOnFile {
     }
 }
 
-impl From<&configuration::files::Files> for AlwaysOnFile {
-    fn from(files: &configuration::files::Files) -> Self {
+impl From<&configuration::Files> for AlwaysOnFile {
+    fn from(files: &configuration::Files) -> Self {
         Self::new(PathBuf::from(files.always_on.clone()))
     }
 }

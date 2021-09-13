@@ -1,8 +1,8 @@
-use super::dom::machine::{Machine, Server};
-use super::networking::pinger::Pinger;
-use super::networking::shutdown_server::ShutdownServer;
-use super::networking::wakeup_server::WakeupServer;
-use super::utils::always_on::AlwaysOn;
+use super::dom::{Machine, Server};
+use super::networking::Pinger;
+use super::networking::ShutdownServer;
+use super::networking::WakeupServer;
+use super::utils::AlwaysOn;
 use super::utils::Instant;
 
 use log::{debug, error, info, warn};
@@ -255,16 +255,16 @@ mod tests {
     }
 
     fn default_mocks() -> (
-        Box<crate::networking::wakeup_server::MockWakeupServer>,
-        Box<crate::networking::shutdown_server::MockShutdownServer>,
-        Box<crate::networking::pinger::MockPinger>,
-        Box<crate::utils::always_on::MockAlwaysOn>,
+        Box<crate::networking::MockWakeupServer>,
+        Box<crate::networking::MockShutdownServer>,
+        Box<crate::networking::MockPinger>,
+        Box<crate::utils::MockAlwaysOn>,
     ) {
         (
-            Box::new(crate::networking::wakeup_server::MockWakeupServer::new()),
-            Box::new(crate::networking::shutdown_server::MockShutdownServer::new()),
-            Box::new(crate::networking::pinger::MockPinger::new()),
-            Box::new(crate::utils::always_on::MockAlwaysOn::new()),
+            Box::new(crate::networking::MockWakeupServer::new()),
+            Box::new(crate::networking::MockShutdownServer::new()),
+            Box::new(crate::networking::MockPinger::new()),
+            Box::new(crate::utils::MockAlwaysOn::new()),
         )
     }
 

@@ -1,1 +1,2 @@
-pub mod machine;
+mod machine;
+pub use machine::{Machine, Server};

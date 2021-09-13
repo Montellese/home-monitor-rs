@@ -5,9 +5,13 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 
-pub mod files;
-pub mod machine;
-pub mod network;
+mod files;
+mod machine;
+mod network;
+
+pub use files::Files;
+pub use machine::{Machine, Server};
+pub use network::{Network, Ping};
 
 pub const LOCATION: &str = "/etc/home-monitor/home-monitor.json";
 

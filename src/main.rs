@@ -35,12 +35,12 @@ struct Opts {
 fn run(
     args: Opts,
     ping_interval: Duration,
-    server: dom::machine::Server,
-    machines: Vec<dom::machine::Machine>,
-    wakeup_server: Box<dyn networking::wakeup_server::WakeupServer>,
-    shutdown_server: Box<dyn networking::shutdown_server::ShutdownServer>,
-    pinger: Box<dyn networking::pinger::Pinger>,
-    always_on: Box<dyn utils::always_on::AlwaysOn>,
+    server: dom::Server,
+    machines: Vec<dom::Machine>,
+    wakeup_server: Box<dyn networking::WakeupServer>,
+    shutdown_server: Box<dyn networking::ShutdownServer>,
+    pinger: Box<dyn networking::Pinger>,
+    always_on: Box<dyn utils::AlwaysOn>,
 ) -> exitcode::ExitCode {
     // check if a manual option (wakeup / shutdown) has been provided
     if args.wakeup {
@@ -82,12 +82,12 @@ fn run(
 
 fn process(
     ping_interval: Duration,
-    server: dom::machine::Server,
-    machines: Vec<dom::machine::Machine>,
-    wakeup_server: Box<dyn networking::wakeup_server::WakeupServer>,
-    shutdown_server: Box<dyn networking::shutdown_server::ShutdownServer>,
-    pinger: Box<dyn networking::pinger::Pinger>,
-    always_on: Box<dyn utils::always_on::AlwaysOn>,
+    server: dom::Server,
+    machines: Vec<dom::Machine>,
+    wakeup_server: Box<dyn networking::WakeupServer>,
+    shutdown_server: Box<dyn networking::ShutdownServer>,
+    pinger: Box<dyn networking::Pinger>,
+    always_on: Box<dyn utils::AlwaysOn>,
 ) -> exitcode::ExitCode {
     debug!("setting up signal handling for SIGTERM");
     let term = Arc::new(AtomicBool::new(false));
@@ -209,29 +209,25 @@ fn main() {
     let ping_interval = Duration::from_secs(config.network.ping.interval);
 
     // create the server DOM object from the parsed configuration
-    let server = dom::machine::Server::from(&config.server);
+    let server = dom::Server::from(&config.server);
 
     // create the machine DOM objects from the parsed configuration
     let mut machines = Vec::new();
     for machine in config.machines.iter() {
-        machines.push(dom::machine::Machine::from(machine));
+        machines.push(dom::Machine::from(machine));
     }
 
     // instantiate a WakeOnLanServer
-    let wakeup_server = Box::new(networking::wake_on_lan_server::WakeOnLanServer::new(
-        &server,
-    ));
+    let wakeup_server = Box::new(networking::WakeOnLanServer::new(&server));
 
     // instantiate a Ssh2ShutdownServer
-    let shutdown_server = Box::new(networking::ssh2_shutdown_server::Ssh2ShutdownServer::new(
-        &server,
-    ));
+    let shutdown_server = Box::new(networking::Ssh2ShutdownServer::new(&server));
 
     // instantiate the FastPinger
-    let pinger = Box::new(networking::fast_pinger::FastPinger::new(None));
+    let pinger = Box::new(networking::FastPinger::new(None));
 
     // instantiate an AlwaysOnFile
-    let always_on = Box::new(utils::always_on_file::AlwaysOnFile::from(&config.files));
+    let always_on = Box::new(utils::AlwaysOnFile::from(&config.files));
 
     // run the monitoring process
     std::process::exit(run(

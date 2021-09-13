@@ -1,4 +1,4 @@
-use super::super::dom::machine;
+use super::super::dom;
 
 use super::wakeup_server::WakeupServer;
 
@@ -10,7 +10,7 @@ pub struct WakeOnLanServer {
 }
 
 impl WakeOnLanServer {
-    pub fn new(server: &machine::Server) -> Self {
+    pub fn new(server: &dom::Server) -> Self {
         Self {
             name: server.machine.name.to_string(),
             mac: server.machine.mac.to_string(),

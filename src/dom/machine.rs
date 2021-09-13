@@ -36,8 +36,8 @@ impl Machine {
     }
 }
 
-impl From<&configuration::machine::Machine> for Machine {
-    fn from(machine: &configuration::machine::Machine) -> Self {
+impl From<&configuration::Machine> for Machine {
+    fn from(machine: &configuration::Machine) -> Self {
         Self::new(
             &machine.name,
             &machine.mac,
@@ -91,8 +91,8 @@ impl Server {
     }
 }
 
-impl From<&configuration::machine::Server> for Server {
-    fn from(server: &configuration::machine::Server) -> Self {
+impl From<&configuration::Server> for Server {
+    fn from(server: &configuration::Server) -> Self {
         Self {
             machine: Machine::from(&server.machine),
             username: server.username.clone(),
