@@ -38,14 +38,12 @@ impl Machine {
 
 impl From<&configuration::machine::Machine> for Machine {
     fn from(machine: &configuration::machine::Machine) -> Self {
-        Self {
-            name: machine.name.clone(),
-            mac: machine.mac.clone(),
-            ip: machine.ip.clone(),
-            last_seen_timeout: machine.last_seen_timeout,
-            is_online: false,
-            last_seen: None,
-        }
+        Self::new(
+            &machine.name,
+            &machine.mac,
+            &machine.ip,
+            machine.last_seen_timeout,
+        )
     }
 }
 
