@@ -1,5 +1,6 @@
 {
     "files": {
+        "alwaysOff": "/etc/home-monitor/alwaysoff",
         "alwaysOn": "/etc/home-monitor/alwayson"
     },
     "network": {
