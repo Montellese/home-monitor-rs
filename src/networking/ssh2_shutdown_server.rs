@@ -1,7 +1,7 @@
 use super::super::dom;
 
-use super::shutdown_error::ShutdownError;
-use super::shutdown_server::ShutdownServer;
+use super::ShutdownError;
+use super::ShutdownServer;
 
 use log::debug;
 use ssh2::Session;

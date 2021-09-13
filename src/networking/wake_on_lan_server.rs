@@ -1,6 +1,6 @@
 use super::super::dom;
 
-use super::wakeup_server::WakeupServer;
+use super::WakeupServer;
 
 use log::debug;
 

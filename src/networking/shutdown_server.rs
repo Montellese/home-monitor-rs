@@ -1,4 +1,4 @@
-use super::shutdown_error::ShutdownError;
+use super::ShutdownError;
 
 #[cfg(test)]
 use mockall::automock;

@@ -1,9 +1,6 @@
 use super::dom::{Machine, Server};
-use super::networking::Pinger;
-use super::networking::ShutdownServer;
-use super::networking::WakeupServer;
-use super::utils::AlwaysOn;
-use super::utils::Instant;
+use super::networking::{Pinger, ShutdownServer, WakeupServer};
+use super::utils::{AlwaysOn, Instant};
 
 use log::{debug, error, info, warn};
 

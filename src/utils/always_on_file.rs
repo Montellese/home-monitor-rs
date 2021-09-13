@@ -1,5 +1,5 @@
 use super::super::configuration;
-use super::always_on::AlwaysOn;
+use super::AlwaysOn;
 
 use std::convert::From;
 use std::path::PathBuf;

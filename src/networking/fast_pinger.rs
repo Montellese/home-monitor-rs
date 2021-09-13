@@ -1,4 +1,4 @@
-use super::pinger::Pinger;
+use super::Pinger;
 
 use fastping_rs::PingResult;
 use fastping_rs::PingResult::{Idle, Receive};
