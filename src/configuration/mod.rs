@@ -61,6 +61,7 @@ mod tests {
     fn test_parse_from_str() {
         let config_json = r#"{
             "files": {
+                "alwaysOff": "/etc/home-monitor/alwaysoff",
                 "alwaysOn": "/etc/home-monitor/alwayson"
             },
             "network": {

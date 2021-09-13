@@ -1,6 +1,6 @@
 use super::dom::{Machine, Server};
 use super::networking::{Pinger, ShutdownServer, WakeupServer};
-use super::utils::{AlwaysOn, Instant};
+use super::utils::{AlwaysOff, AlwaysOn, Instant};
 
 use log::{debug, error, info, warn};
 
@@ -16,8 +16,11 @@ pub struct Monitor {
     wakeup_server: Box<dyn WakeupServer>,
     shutdown_server: Box<dyn ShutdownServer>,
 
+    always_off_state: bool,
+    always_off: Box<dyn AlwaysOff>,
     always_on_state: bool,
     always_on: Box<dyn AlwaysOn>,
+
     last_ping: Instant,
     last_change: Instant,
     ping_interval: Duration,
@@ -26,6 +29,7 @@ pub struct Monitor {
 }
 
 impl Monitor {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         ping_interval: Duration,
         server: Server,
@@ -33,6 +37,7 @@ impl Monitor {
         wakeup_server: Box<dyn WakeupServer>,
         shutdown_server: Box<dyn ShutdownServer>,
         pinger: Box<dyn Pinger>,
+        always_off: Box<dyn AlwaysOff>,
         always_on: Box<dyn AlwaysOn>,
     ) -> Self {
         // get a mutable binding to pinger
@@ -79,6 +84,8 @@ impl Monitor {
             machines: mut_machines,
             wakeup_server,
             shutdown_server,
+            always_off_state: false,
+            always_off,
             always_on_state: false,
             always_on,
             last_ping,
@@ -89,10 +96,26 @@ impl Monitor {
     }
 
     pub fn run_once(&mut self) {
-        // check the always on file
         {
+            // check the always off file
+            let always_off_file_exists = self.always_off.is_always_off();
+            // check the always on file
             let always_on_file_exists = self.always_on.is_always_on();
-            if always_on_file_exists != self.always_on_state {
+
+            // make sure we don't have always off and on simultaneously
+            if always_off_file_exists && always_on_file_exists {
+                warn!("ignoring ALWAYS OFF and ALWAYS ON because they are enabled simultaneously");
+                self.always_off_state = false;
+                self.always_on_state = false;
+            } else if always_off_file_exists != self.always_off_state {
+                if always_off_file_exists {
+                    info!("ALWAYS OFF has been enabled");
+                } else {
+                    info!("ALWAYS OFF has been disabled");
+                }
+
+                self.always_off_state = always_off_file_exists;
+            } else if always_on_file_exists != self.always_on_state {
                 if always_on_file_exists {
                     info!("ALWAYS ON has been enabled");
                 } else {
@@ -135,12 +158,18 @@ impl Monitor {
         let any_machine_is_online = self.machines.iter().any(|machine| machine.is_online);
 
         // process the collected information
-        if self.always_on_state || self.last_change.elapsed() > CHANGE_TIMEOUT {
+        if self.always_off_state
+            || self.always_on_state
+            || self.last_change.elapsed() > CHANGE_TIMEOUT
+        {
             // if the server is not online and
             //   the always on file exists or
             //   any machine is online
             // then wake the server up
-            if !self.server.machine.is_online && (self.always_on_state || any_machine_is_online) {
+            if !self.server.machine.is_online
+                && !self.always_off_state
+                && (self.always_on_state || any_machine_is_online)
+            {
                 info!("waking up {}...", self.server);
                 match self.wakeup_server.wakeup() {
                     Err(_) => error!("failed to wake up {}", self.server),
@@ -148,9 +177,9 @@ impl Monitor {
                         self.last_change = Instant::now();
                     }
                 }
-            } else if !self.always_on_state
-                && !any_machine_is_online
-                && self.server.machine.is_online
+            } else if self.server.machine.is_online
+                && !self.always_on_state
+                && (self.always_off_state || !any_machine_is_online)
             {
                 info!("shutting down {}...", self.server);
                 match self.shutdown_server.shutdown() {
@@ -255,12 +284,14 @@ mod tests {
         Box<crate::networking::MockWakeupServer>,
         Box<crate::networking::MockShutdownServer>,
         Box<crate::networking::MockPinger>,
+        Box<crate::utils::MockAlwaysOff>,
         Box<crate::utils::MockAlwaysOn>,
     ) {
         (
             Box::new(crate::networking::MockWakeupServer::new()),
             Box::new(crate::networking::MockShutdownServer::new()),
             Box::new(crate::networking::MockPinger::new()),
+            Box::new(crate::utils::MockAlwaysOff::new()),
             Box::new(crate::utils::MockAlwaysOn::new()),
         )
     }
@@ -270,7 +301,7 @@ mod tests {
     #[allow(unused_variables)]
     fn test_monitor_fails_if_server_has_no_ip(fake_clock: (), machine: Machine) {
         // SETUP
-        let (wakeup_server, shutdown_server, mut pinger, always_on) = default_mocks();
+        let (wakeup_server, shutdown_server, mut pinger, always_off, always_on) = default_mocks();
 
         let server = Server::new(
             SERVER_NAME,
@@ -299,6 +330,7 @@ mod tests {
             wakeup_server,
             shutdown_server,
             pinger,
+            always_off,
             always_on,
         );
     }
@@ -308,7 +340,7 @@ mod tests {
     #[allow(unused_variables)]
     fn test_monitor_fails_without_machines(fake_clock: (), server: Server) {
         // SETUP
-        let (wakeup_server, shutdown_server, mut pinger, always_on) = default_mocks();
+        let (wakeup_server, shutdown_server, mut pinger, always_off, always_on) = default_mocks();
 
         let machines = vec![];
 
@@ -328,6 +360,7 @@ mod tests {
             wakeup_server,
             shutdown_server,
             pinger,
+            always_off,
             always_on,
         );
     }
@@ -336,7 +369,7 @@ mod tests {
     #[allow(unused_variables)]
     fn test_monitor_ignore_duplicate_machine_ips(fake_clock: (), server: Server, machine: Machine) {
         // SETUP
-        let (wakeup_server, shutdown_server, mut pinger, always_on) = default_mocks();
+        let (wakeup_server, shutdown_server, mut pinger, always_off, always_on) = default_mocks();
 
         let machines = vec![
             machine,
@@ -378,19 +411,21 @@ mod tests {
             wakeup_server,
             shutdown_server,
             pinger,
+            always_off,
             always_on,
         );
     }
 
     #[rstest]
     #[allow(unused_variables)]
-    fn test_monitor_always_on_checked_in_run_once(
+    fn test_monitor_always_off_and_on_checked_in_run_once(
         fake_clock: (),
         server: Server,
         machine: Machine,
     ) {
         // SETUP
-        let (wakeup_server, shutdown_server, mut pinger, mut always_on) = default_mocks();
+        let (wakeup_server, shutdown_server, mut pinger, mut always_off, mut always_on) =
+            default_mocks();
 
         let machines = vec![machine];
 
@@ -399,6 +434,12 @@ mod tests {
 
         // ping_once() is not called as long as the ping interval hasn't expired
         pinger.expect_ping_once().never();
+
+        // is_always_off() is always called
+        always_off
+            .expect_is_always_off()
+            .once()
+            .return_once(|| false);
 
         // is_always_on() is always called
         always_on.expect_is_always_on().once().return_once(|| false);
@@ -412,6 +453,7 @@ mod tests {
             wakeup_server,
             shutdown_server,
             pinger,
+            always_off,
             always_on,
         );
 
@@ -420,15 +462,130 @@ mod tests {
 
     #[rstest]
     #[allow(unused_variables)]
-    fn test_monitor_wakeup_server_if_always_on(fake_clock: (), server: Server, machine: Machine) {
+    fn test_monitor_ignore_if_always_off_and_on(fake_clock: (), server: Server, machine: Machine) {
         // SETUP
-        let (mut wakeup_server, shutdown_server, mut pinger, mut always_on) = default_mocks();
+        let (mut wakeup_server, mut shutdown_server, mut pinger, mut always_off, mut always_on) =
+            default_mocks();
 
         let machines = vec![machine];
 
         // EXPECTATIONS
         pinger.expect_add_target().returning(|_| Ok(true));
 
+        always_off
+            .expect_is_always_off()
+            .once()
+            .return_once(|| true);
+        always_on.expect_is_always_on().once().return_once(|| true);
+
+        wakeup_server.expect_wakeup().never();
+        shutdown_server.expect_shutdown().never();
+
+        // TESTING
+        #[allow(unused_variables)]
+        let mut monitor = Monitor::new(
+            PING_INTERVAL,
+            server,
+            machines,
+            wakeup_server,
+            shutdown_server,
+            pinger,
+            always_off,
+            always_on,
+        );
+
+        monitor.run_once();
+    }
+
+    #[rstest]
+    #[allow(unused_variables)]
+    fn test_monitor_shutdown_server_if_always_off(
+        fake_clock: (),
+        server: Server,
+        machine: Machine,
+    ) {
+        // SETUP
+        let (wakeup_server, mut shutdown_server, mut pinger, mut always_off, mut always_on) =
+            default_mocks();
+
+        let machines = vec![machine];
+
+        // EXPECTATIONS
+        pinger.expect_add_target().returning(|_| Ok(true));
+
+        always_off
+            .expect_is_always_off()
+            .once()
+            .return_once(|| true);
+        always_on.expect_is_always_on().once().return_once(|| false);
+
+        {
+            // we need to simulate that the server and machine are online
+            let mut seq = Sequence::new();
+            pinger
+                .expect_ping_once()
+                .once()
+                .return_once(|| {})
+                .in_sequence(&mut seq);
+            pinger
+                .expect_recv_pong()
+                .once()
+                .return_once(|| Ok(()))
+                .in_sequence(&mut seq);
+            pinger
+                .expect_is_online()
+                .with(eq(SERVER_IP))
+                .once()
+                .return_once(|_| true)
+                .in_sequence(&mut seq);
+            pinger
+                .expect_is_online()
+                .with(eq(MACHINE_IP))
+                .once()
+                .return_once(|_| true)
+                .in_sequence(&mut seq);
+        }
+
+        shutdown_server
+            .expect_shutdown()
+            .once()
+            .return_once(|| Ok(()));
+
+        // TESTING
+        #[allow(unused_variables)]
+        let mut monitor = Monitor::new(
+            PING_INTERVAL,
+            server,
+            machines,
+            wakeup_server,
+            shutdown_server,
+            pinger,
+            always_off,
+            always_on,
+        );
+
+        // advance FakeClock by at least ping interval (1s)
+        Instant::advance_time((2 * PING_INTERVAL).as_millis().try_into().unwrap());
+
+        monitor.run_once();
+    }
+
+    #[rstest]
+    #[allow(unused_variables)]
+    fn test_monitor_wakeup_server_if_always_on(fake_clock: (), server: Server, machine: Machine) {
+        // SETUP
+        let (mut wakeup_server, shutdown_server, mut pinger, mut always_off, mut always_on) =
+            default_mocks();
+
+        let machines = vec![machine];
+
+        // EXPECTATIONS
+        pinger.expect_add_target().returning(|_| Ok(true));
+
+        always_off
+            .expect_is_always_off()
+            .once()
+            .return_once(|| false);
         always_on.expect_is_always_on().once().return_once(|| true);
 
         wakeup_server.expect_wakeup().once().return_once(|| Ok(()));
@@ -442,6 +599,7 @@ mod tests {
             wakeup_server,
             shutdown_server,
             pinger,
+            always_off,
             always_on,
         );
 
@@ -456,13 +614,18 @@ mod tests {
         machine: Machine,
     ) {
         // SETUP
-        let (wakeup_server, shutdown_server, mut pinger, mut always_on) = default_mocks();
+        let (wakeup_server, shutdown_server, mut pinger, mut always_off, mut always_on) =
+            default_mocks();
 
         let machines = vec![machine];
 
         // EXPECTATIONS
         pinger.expect_add_target().returning(|_| Ok(true));
 
+        always_off
+            .expect_is_always_off()
+            .once()
+            .return_once(|| false);
         always_on.expect_is_always_on().once().return_once(|| false);
 
         let mut seq = Sequence::new();
@@ -498,6 +661,7 @@ mod tests {
             wakeup_server,
             shutdown_server,
             pinger,
+            always_off,
             always_on,
         );
 
@@ -512,13 +676,18 @@ mod tests {
     #[allow(unused_variables)]
     fn test_monitor_fails_if_recv_pong_fails(fake_clock: (), server: Server, machine: Machine) {
         // SETUP
-        let (wakeup_server, shutdown_server, mut pinger, mut always_on) = default_mocks();
+        let (wakeup_server, shutdown_server, mut pinger, mut always_off, mut always_on) =
+            default_mocks();
 
         let machines = vec![machine];
 
         // EXPECTATIONS
         pinger.expect_add_target().returning(|_| Ok(true));
 
+        always_off
+            .expect_is_always_off()
+            .once()
+            .return_once(|| false);
         always_on.expect_is_always_on().once().return_once(|| false);
 
         let mut seq = Sequence::new();
@@ -542,6 +711,7 @@ mod tests {
             wakeup_server,
             shutdown_server,
             pinger,
+            always_off,
             always_on,
         );
 
@@ -559,13 +729,18 @@ mod tests {
         machine: Machine,
     ) {
         // SETUP
-        let (mut wakeup_server, shutdown_server, mut pinger, mut always_on) = default_mocks();
+        let (mut wakeup_server, shutdown_server, mut pinger, mut always_off, mut always_on) =
+            default_mocks();
 
         let machines = vec![machine];
 
         // EXPECTATIONS
         pinger.expect_add_target().returning(|_| Ok(true));
 
+        always_off
+            .expect_is_always_off()
+            .once()
+            .return_once(|| false);
         always_on.expect_is_always_on().once().return_once(|| false);
 
         let mut seq = Sequence::new();
@@ -603,6 +778,7 @@ mod tests {
             wakeup_server,
             shutdown_server,
             pinger,
+            always_off,
             always_on,
         );
 
@@ -620,13 +796,15 @@ mod tests {
         machine: Machine,
     ) {
         // SETUP
-        let (mut wakeup_server, shutdown_server, mut pinger, mut always_on) = default_mocks();
+        let (mut wakeup_server, shutdown_server, mut pinger, mut always_off, mut always_on) =
+            default_mocks();
 
         let machines = vec![machine];
 
         // EXPECTATIONS
         pinger.expect_add_target().returning(|_| Ok(true));
 
+        always_off.expect_is_always_off().returning(|| false);
         always_on.expect_is_always_on().returning(|| false);
 
         pinger.expect_ping_once().returning(|| {});
@@ -651,6 +829,7 @@ mod tests {
             wakeup_server,
             shutdown_server,
             pinger,
+            always_off,
             always_on,
         );
 
@@ -680,13 +859,18 @@ mod tests {
         machine: Machine,
     ) {
         // SETUP
-        let (wakeup_server, mut shutdown_server, mut pinger, mut always_on) = default_mocks();
+        let (wakeup_server, mut shutdown_server, mut pinger, mut always_off, mut always_on) =
+            default_mocks();
 
         let machines = vec![machine];
 
         // EXPECTATIONS
         pinger.expect_add_target().returning(|_| Ok(true));
 
+        always_off
+            .expect_is_always_off()
+            .once()
+            .return_once(|| false);
         always_on.expect_is_always_on().returning(|| false);
 
         pinger.expect_ping_once().returning(|| {});
@@ -714,6 +898,7 @@ mod tests {
             wakeup_server,
             shutdown_server,
             pinger,
+            always_off,
             always_on,
         );
 
@@ -731,7 +916,8 @@ mod tests {
         machine: Machine,
     ) {
         // SETUP
-        let (mut wakeup_server, mut shutdown_server, mut pinger, mut always_on) = default_mocks();
+        let (mut wakeup_server, mut shutdown_server, mut pinger, mut always_off, mut always_on) =
+            default_mocks();
 
         let machines = vec![machine];
 
@@ -741,6 +927,11 @@ mod tests {
         let mut seq = Sequence::new();
 
         // first call to ping_once() which will wakeup the server
+        always_off
+            .expect_is_always_off()
+            .once()
+            .return_once(|| false)
+            .in_sequence(&mut seq);
         always_on
             .expect_is_always_on()
             .once()
@@ -775,6 +966,11 @@ mod tests {
             .in_sequence(&mut seq);
 
         // second call to ping_once() which will not shutdown the server
+        always_off
+            .expect_is_always_off()
+            .once()
+            .return_once(|| false)
+            .in_sequence(&mut seq);
         always_on
             .expect_is_always_on()
             .once()
@@ -804,6 +1000,11 @@ mod tests {
             .in_sequence(&mut seq);
 
         // third call to ping_once() which will shutdown the server
+        always_off
+            .expect_is_always_off()
+            .once()
+            .return_once(|| false)
+            .in_sequence(&mut seq);
         always_on
             .expect_is_always_on()
             .once()
@@ -846,6 +1047,7 @@ mod tests {
             wakeup_server,
             shutdown_server,
             pinger,
+            always_off,
             always_on,
         );
 
@@ -873,18 +1075,73 @@ mod tests {
 
     #[rstest]
     #[allow(unused_variables)]
+    fn test_monitor_dont_wakeup_server_if_always_off(
+        fake_clock: (),
+        server: Server,
+        machine: Machine,
+    ) {
+        // SETUP
+        let (mut wakeup_server, shutdown_server, mut pinger, mut always_off, mut always_on) =
+            default_mocks();
+
+        let machines = vec![machine];
+
+        // EXPECTATIONS
+        pinger.expect_add_target().returning(|_| Ok(true));
+
+        always_off.expect_is_always_off().returning(|| true);
+
+        always_on.expect_is_always_on().returning(|| false);
+
+        pinger.expect_ping_once().returning(|| {});
+        pinger.expect_recv_pong().returning(|| Ok(()));
+        pinger
+            .expect_is_online()
+            .with(eq(SERVER_IP))
+            .returning(|_| false);
+        pinger
+            .expect_is_online()
+            .with(eq(MACHINE_IP))
+            .returning(|_| true);
+
+        wakeup_server.expect_wakeup().never();
+
+        // TESTING
+        #[allow(unused_variables)]
+        let mut monitor = Monitor::new(
+            PING_INTERVAL,
+            server,
+            machines,
+            wakeup_server,
+            shutdown_server,
+            pinger,
+            always_off,
+            always_on,
+        );
+
+        // advance FakeClock by at least ping interval (1s)
+        Instant::advance_time((2 * PING_INTERVAL).as_millis().try_into().unwrap());
+
+        monitor.run_once();
+    }
+
+    #[rstest]
+    #[allow(unused_variables)]
     fn test_monitor_dont_shutdown_server_if_always_on(
         fake_clock: (),
         server: Server,
         machine: Machine,
     ) {
         // SETUP
-        let (wakeup_server, mut shutdown_server, mut pinger, mut always_on) = default_mocks();
+        let (wakeup_server, mut shutdown_server, mut pinger, mut always_off, mut always_on) =
+            default_mocks();
 
         let machines = vec![machine];
 
         // EXPECTATIONS
         pinger.expect_add_target().returning(|_| Ok(true));
+
+        always_off.expect_is_always_off().returning(|| false);
 
         always_on.expect_is_always_on().returning(|| true);
 
@@ -910,6 +1167,7 @@ mod tests {
             wakeup_server,
             shutdown_server,
             pinger,
+            always_off,
             always_on,
         );
 

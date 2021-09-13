@@ -40,6 +40,7 @@ fn run(
     wakeup_server: Box<dyn networking::WakeupServer>,
     shutdown_server: Box<dyn networking::ShutdownServer>,
     pinger: Box<dyn networking::Pinger>,
+    always_off: Box<dyn utils::AlwaysOff>,
     always_on: Box<dyn utils::AlwaysOn>,
 ) -> exitcode::ExitCode {
     // check if a manual option (wakeup / shutdown) has been provided
@@ -75,11 +76,13 @@ fn run(
             wakeup_server,
             shutdown_server,
             pinger,
+            always_off,
             always_on,
         )
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn process(
     ping_interval: Duration,
     server: dom::Server,
@@ -87,6 +90,7 @@ fn process(
     wakeup_server: Box<dyn networking::WakeupServer>,
     shutdown_server: Box<dyn networking::ShutdownServer>,
     pinger: Box<dyn networking::Pinger>,
+    always_off: Box<dyn utils::AlwaysOff>,
     always_on: Box<dyn utils::AlwaysOn>,
 ) -> exitcode::ExitCode {
     debug!("setting up signal handling for SIGTERM");
@@ -103,6 +107,7 @@ fn process(
         wakeup_server,
         shutdown_server,
         pinger,
+        always_off,
         always_on,
     );
 
@@ -226,7 +231,8 @@ fn main() {
     // instantiate the FastPinger
     let pinger = Box::new(networking::FastPinger::new(None));
 
-    // instantiate an AlwaysOnFile
+    // instantiate an AlwaysOffFile / AlwaysOnFile
+    let always_off = Box::new(utils::AlwaysOffFile::from(&config.files));
     let always_on = Box::new(utils::AlwaysOnFile::from(&config.files));
 
     // run the monitoring process
@@ -238,6 +244,7 @@ fn main() {
         wakeup_server,
         shutdown_server,
         pinger,
+        always_off,
         always_on,
     ));
 }

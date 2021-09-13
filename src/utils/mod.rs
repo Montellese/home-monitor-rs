@@ -1,6 +1,12 @@
+mod always_off;
+mod always_off_file;
 mod always_on;
 mod always_on_file;
 
+pub use always_off::AlwaysOff;
+#[cfg(test)]
+pub use always_off::MockAlwaysOff;
+pub use always_off_file::AlwaysOffFile;
 pub use always_on::AlwaysOn;
 #[cfg(test)]
 pub use always_on::MockAlwaysOn;
