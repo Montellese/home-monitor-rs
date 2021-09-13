@@ -231,7 +231,7 @@ fn main() {
     let pinger = Box::new(networking::fast_pinger::FastPinger::new(None));
 
     // instantiate an AlwaysOnFile
-    let always_on = Box::new(utils::always_on_file::AlwaysOnFile::new(&config.files));
+    let always_on = Box::new(utils::always_on_file::AlwaysOnFile::from(&config.files));
 
     // run the monitoring process
     std::process::exit(run(
