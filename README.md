@@ -51,6 +51,7 @@ OPTIONS:
 ```json
 {
     "files": {
+        "alwaysOff": "/etc/home-monitor/alwaysoff",
         "alwaysOn": "/etc/home-monitor/alwayson"
     },
     "network": {
@@ -81,7 +82,7 @@ OPTIONS:
 
 The `machines` array can contain as many "machines" as necessary. Every configured machine will be monitored to determine the expected status of the configured `server`.
 
-The `alwaysOn` file configuration option specifies a file which - if present - forces `home-monitor-rs` to turn the configured `server` on independent of the status of the configured `machines`.
+The `alwaysOff` file configuration option specifies a file which - if present - forces `home-monitor-rs` to turn the configured `server` off independent of the status of the configured `machines`. Similarly the `alwaysOn` file configuration option specifies a file which - if present - forces `home-monitor-rs` to turn the configured `server` on independent of the status of the configured `machines`.
 
 ### Systemd Service
 
