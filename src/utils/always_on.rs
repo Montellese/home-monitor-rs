@@ -2,6 +2,6 @@
 use mockall::automock;
 
 #[cfg_attr(test, automock)]
-pub trait AlwaysOn {
+pub trait AlwaysOn: Send {
     fn is_always_on(&self) -> bool;
 }

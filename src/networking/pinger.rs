@@ -5,7 +5,7 @@ use std::sync::mpsc::RecvError;
 use mockall::automock;
 
 #[cfg_attr(test, automock)]
-pub trait Pinger {
+pub trait Pinger: Send {
     fn add_target(&mut self, ip_addr: &str) -> Result<bool, AddrParseError>;
 
     fn ping_once(&self);

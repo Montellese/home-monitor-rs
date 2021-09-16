@@ -1,11 +1,9 @@
 use clap::Clap;
 
-use log::{debug, error, info};
+use log::{error, info};
 use simplelog::{LevelFilter, SimpleLogger};
 
 use std::path::Path;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
 use std::time::Duration;
 
 mod configuration;
@@ -32,7 +30,7 @@ struct Opts {
 }
 
 #[allow(clippy::too_many_arguments)]
-fn run(
+async fn run(
     args: Opts,
     ping_interval: Duration,
     server: dom::Server,
@@ -78,12 +76,12 @@ fn run(
             pinger,
             always_off,
             always_on,
-        )
+        ).await
     }
 }
 
 #[allow(clippy::too_many_arguments)]
-fn process(
+async fn process(
     ping_interval: Duration,
     server: dom::Server,
     machines: Vec<dom::Machine>,
@@ -93,34 +91,36 @@ fn process(
     always_off: Box<dyn utils::AlwaysOff>,
     always_on: Box<dyn utils::AlwaysOn>,
 ) -> exitcode::ExitCode {
-    debug!("setting up signal handling for SIGTERM");
-    let term = Arc::new(AtomicBool::new(false));
-    if let Err(e) = signal_hook::flag::register(signal_hook::consts::SIGTERM, Arc::clone(&term)) {
-        error!("failed to setup signal handling: {}", e);
-        return exitcode::SOFTWARE;
+    let monitoring = tokio::spawn(async move {
+        let mut monitor = monitor::Monitor::new(
+            ping_interval,
+            server,
+            machines,
+            wakeup_server,
+            shutdown_server,
+            pinger,
+            always_off,
+            always_on,
+        );
+
+        let mut interval = tokio::time::interval(Duration::from_secs(1));
+        
+        loop {
+            interval.tick().await;
+            monitor.run_once();
+        }
+    });
+
+    let sigterm = tokio::signal::ctrl_c();
+
+    tokio::select! {
+        _ = sigterm => exitcode::OK,
+        _ = monitoring => exitcode::SOFTWARE,
     }
-
-    let mut monitor = monitor::Monitor::new(
-        ping_interval,
-        server,
-        machines,
-        wakeup_server,
-        shutdown_server,
-        pinger,
-        always_off,
-        always_on,
-    );
-
-    while !term.load(Ordering::Relaxed) {
-        monitor.run_once();
-
-        std::thread::sleep(Duration::from_secs(1));
-    }
-
-    exitcode::OK
 }
 
-fn main() {
+#[tokio::main]
+pub async fn main() {
     // parse command line arguments
     let args: Opts = Opts::parse();
 
@@ -237,7 +237,7 @@ fn main() {
     let always_on = Box::new(utils::AlwaysOnFile::from(&config.api.files));
 
     // run the monitoring process
-    std::process::exit(run(
+    let result = run(
         args,
         ping_interval,
         server,
@@ -247,5 +247,7 @@ fn main() {
         pinger,
         always_off,
         always_on,
-    ));
+    ).await;
+    std::process::exit(result);
 }
+*/

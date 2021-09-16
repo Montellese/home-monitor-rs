@@ -4,6 +4,6 @@ use super::ShutdownError;
 use mockall::automock;
 
 #[cfg_attr(test, automock)]
-pub trait ShutdownServer {
+pub trait ShutdownServer: Send {
     fn shutdown(&self) -> Result<(), ShutdownError>;
 }
