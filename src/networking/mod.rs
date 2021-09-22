@@ -33,7 +33,7 @@ pub fn get_network_interface(
     // try to find the interface matching the given name
     let iface = ifaces
         .into_iter()
-        .find(|iface| iface.name == interface_name);
+        .find(|iface| iface.name == interface_name && !iface.ips.is_empty());
     return match iface {
         Some(iface) => Ok(iface),
         None => Err(networking_error::NetworkingError(format!(
