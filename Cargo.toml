@@ -18,6 +18,7 @@ serde_json = "1.0.61"
 signal-hook = "0.3.4"
 simplelog = { version = "0.9.0", default-features = false }
 ssh2 = "0.9.1"
+tempfile = "3.2.0"
 tokio = { version = "1.11.0", features = ["full"] }
 wakey = "0.1.2"
 

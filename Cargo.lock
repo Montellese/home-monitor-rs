@@ -510,6 +510,7 @@ dependencies = [
  "simplelog",
  "sn_fake_clock",
  "ssh2",
+ "tempfile",
  "tokio",
  "wakey",
 ]
