@@ -1,15 +1,21 @@
+use super::api::*;
+
+use crate::configuration::Configuration;
+
 use log::warn;
 
 pub struct Server {
     name: String,
     version: String,
+    config: Configuration,
 }
 
 impl Server {
-    pub fn new(name: &str, version: &str) -> Self {
+    pub fn new(name: &str, version: &str, config: Configuration) -> Self {
         Self {
             name: name.to_string(),
             version: version.to_string(),
+            config,
         }
     }
 
@@ -34,7 +40,10 @@ impl Server {
             Err(e) => warn!("failed to create custom identitiy for the web API: {}", e),
         };
 
-        let server = rocket::custom(&config).launch();
+        let server = rocket::custom(&config)
+            .mount("/api/v1/", rocket::routes![get_config])
+            .manage(self.config.clone())
+            .launch();
         server.await
     }
 

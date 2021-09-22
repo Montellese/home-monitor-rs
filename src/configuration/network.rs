@@ -1,6 +1,6 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Ping {
     pub interval: u64,
@@ -14,7 +14,7 @@ impl Ping {
     }
 }
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Network {
     pub interface: String,

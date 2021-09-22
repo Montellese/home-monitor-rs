@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use std::error::Error;
 use std::fs::File;
@@ -19,7 +19,7 @@ pub use web::Web;
 
 pub const LOCATION: &str = "/etc/home-monitor/home-monitor.json";
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Configuration {
     pub api: api::Api,

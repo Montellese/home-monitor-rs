@@ -145,13 +145,13 @@ fn process(
                 log_level = rocket::config::LogLevel::Normal;
             }
 
-            let server = web::Server::new(PKG_NAME, PKG_VERSION);
+            let ip = config.api.web.ip;
+            let port = config.api.web.port;
+
+            let server = web::Server::new(PKG_NAME, PKG_VERSION, config);
 
             debug!("starting the web API...");
-            if let Err(e) = server
-                .launch(config.api.web.ip, config.api.web.port, log_level)
-                .await
-            {
+            if let Err(e) = server.launch(ip, port, log_level).await {
                 panic!("failed to launch Rocket-based web API: {}", e);
             }
         }

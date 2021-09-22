@@ -1,8 +1,8 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use std::net::IpAddr;
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Web {
     #[serde(default = "Web::default_ip")]

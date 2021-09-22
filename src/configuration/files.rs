@@ -1,6 +1,6 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Files {
     pub always_on: String,

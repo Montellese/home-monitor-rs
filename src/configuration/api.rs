@@ -1,9 +1,9 @@
 use super::Files;
 use super::Web;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Api {
     pub files: Files,

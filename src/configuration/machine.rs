@@ -1,6 +1,6 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Machine {
     pub name: String,
@@ -18,7 +18,7 @@ impl Machine {
     }
 }
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Server {
     #[serde(flatten)]
