@@ -10,6 +10,10 @@
         "files": {
             "alwaysOff": "/etc/home-monitor/alwaysoff",
             "alwaysOn": "/etc/home-monitor/alwayson"
+        },
+        "web": {
+            "ip": "127.0.0.1",
+            "port": 8000
         }
     },
     "server": {

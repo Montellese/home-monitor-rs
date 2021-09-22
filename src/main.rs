@@ -1,6 +1,6 @@
 use clap::Clap;
 
-use log::{error, info};
+use log::{debug, error, info};
 use simplelog::{LevelFilter, SimpleLogger};
 
 use std::path::Path;
@@ -11,6 +11,10 @@ mod dom;
 mod monitor;
 mod networking;
 mod utils;
+mod web;
+
+const PKG_NAME: &str = env!("CARGO_PKG_NAME");
+const PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Clap)]
 #[clap(version = clap::crate_version!(), author = clap::crate_authors!())]
@@ -30,8 +34,9 @@ struct Opts {
 }
 
 #[allow(clippy::too_many_arguments)]
-async fn run(
+fn run(
     args: Opts,
+    config: configuration::Configuration,
     ping_interval: Duration,
     server: dom::Server,
     machines: Vec<dom::Machine>,
@@ -68,6 +73,8 @@ async fn run(
         };
     } else {
         process(
+            args,
+            config,
             ping_interval,
             server,
             machines,
@@ -76,12 +83,14 @@ async fn run(
             pinger,
             always_off,
             always_on,
-        ).await
+        )
     }
 }
 
 #[allow(clippy::too_many_arguments)]
-async fn process(
+fn process(
+    args: Opts,
+    config: configuration::Configuration,
     ping_interval: Duration,
     server: dom::Server,
     machines: Vec<dom::Machine>,
@@ -91,7 +100,21 @@ async fn process(
     always_off: Box<dyn utils::AlwaysOff>,
     always_on: Box<dyn utils::AlwaysOn>,
 ) -> exitcode::ExitCode {
-    let monitoring = tokio::spawn(async move {
+    // create the tokio runtime
+    let rt = tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(web::Server::get_num_workers())
+        .thread_name(web::Server::get_thread_name(PKG_NAME))
+        .enable_all()
+        .build()
+        .expect("failed to build a tokio runtime");
+
+    // setup SIGINT signal handling
+    debug!("setting up signal handling for SIGTERM");
+    let sigterm = tokio::signal::ctrl_c();
+
+    // run the main code asynchronously
+    info!("monitoring the network for activity...");
+    let monitoring = rt.spawn(async move {
         let mut monitor = monitor::Monitor::new(
             ping_interval,
             server,
@@ -104,23 +127,46 @@ async fn process(
         );
 
         let mut interval = tokio::time::interval(Duration::from_secs(1));
-        
+
         loop {
             interval.tick().await;
             monitor.run_once();
         }
     });
 
-    let sigterm = tokio::signal::ctrl_c();
+    let rocket = rt.spawn(async move {
+        // only start the web API if a valid port is configured
+        if config.api.web.port > 0 {
+            // configure logging depending on cli arguments
+            let mut log_level = rocket::config::LogLevel::Off;
+            if args.verbose {
+                log_level = rocket::config::LogLevel::Debug;
+            } else if args.debug {
+                log_level = rocket::config::LogLevel::Normal;
+            }
 
-    tokio::select! {
-        _ = sigterm => exitcode::OK,
-        _ = monitoring => exitcode::SOFTWARE,
-    }
+            let server = web::Server::new(PKG_NAME, PKG_VERSION);
+
+            debug!("starting the web API...");
+            if let Err(e) = server
+                .launch(config.api.web.ip, config.api.web.port, log_level)
+                .await
+            {
+                panic!("failed to launch Rocket-based web API: {}", e);
+            }
+        }
+    });
+
+    rt.block_on(async move {
+        tokio::select! {
+            _ = sigterm => exitcode::OK,
+            _ = monitoring => exitcode::SOFTWARE,
+            _ = rocket => exitcode::SOFTWARE,
+        }
+    })
 }
 
-#[tokio::main]
-pub async fn main() {
+fn main() {
     // parse command line arguments
     let args: Opts = Opts::parse();
 
@@ -210,7 +256,6 @@ pub async fn main() {
     }
 
     info!("");
-    info!("monitoring the network for activity...");
 
     let ping_interval = Duration::from_secs(config.network.ping.interval);
 
@@ -239,6 +284,7 @@ pub async fn main() {
     // run the monitoring process
     let result = run(
         args,
+        config,
         ping_interval,
         server,
         machines,
@@ -247,7 +293,6 @@ pub async fn main() {
         pinger,
         always_off,
         always_on,
-    ).await;
+    );
     std::process::exit(result);
 }
-*/

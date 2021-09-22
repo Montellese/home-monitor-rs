@@ -9,11 +9,13 @@ mod api;
 mod files;
 mod machine;
 mod network;
+mod web;
 
 pub use api::Api;
 pub use files::Files;
 pub use machine::{Machine, Server};
 pub use network::{Network, Ping};
+pub use web::Web;
 
 pub const LOCATION: &str = "/etc/home-monitor/home-monitor.json";
 
@@ -73,6 +75,10 @@ mod tests {
                 "files": {
                     "alwaysOff": "/etc/home-monitor/alwaysoff",
                     "alwaysOn": "/etc/home-monitor/alwayson"
+                },
+                "web": {
+                    "ip": "127.0.0.1",
+                    "port": 8000
                 }
             },
             "server": {
