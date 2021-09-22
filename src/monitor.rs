@@ -18,7 +18,7 @@ pub struct Monitor {
     shutdown_server: Box<dyn ShutdownServer>,
 
     always_off_state: bool,
-    always_off: Box<dyn AlwaysOff>,
+    always_off: Arc<dyn AlwaysOff>,
     always_on_state: bool,
     always_on: Arc<dyn AlwaysOn>,
 
@@ -38,7 +38,7 @@ impl Monitor {
         wakeup_server: Box<dyn WakeupServer>,
         shutdown_server: Box<dyn ShutdownServer>,
         pinger: Box<dyn Pinger>,
-        always_off: Box<dyn AlwaysOff>,
+        always_off: Arc<dyn AlwaysOff>,
         always_on: Arc<dyn AlwaysOn>,
     ) -> Self {
         // get a mutable binding to pinger
@@ -285,14 +285,14 @@ mod tests {
         Box<crate::networking::MockWakeupServer>,
         Box<crate::networking::MockShutdownServer>,
         Box<crate::networking::MockPinger>,
-        Box<crate::utils::MockAlwaysOff>,
+        crate::utils::MockAlwaysOff,
         crate::utils::MockAlwaysOn,
     ) {
         (
             Box::new(crate::networking::MockWakeupServer::new()),
             Box::new(crate::networking::MockShutdownServer::new()),
             Box::new(crate::networking::MockPinger::new()),
-            Box::new(crate::utils::MockAlwaysOff::new()),
+            crate::utils::MockAlwaysOff::new(),
             crate::utils::MockAlwaysOn::new(),
         )
     }
@@ -331,7 +331,7 @@ mod tests {
             wakeup_server,
             shutdown_server,
             pinger,
-            always_off,
+            Arc::new(always_off),
             Arc::new(always_on),
         );
     }
@@ -361,7 +361,7 @@ mod tests {
             wakeup_server,
             shutdown_server,
             pinger,
-            always_off,
+            Arc::new(always_off),
             Arc::new(always_on),
         );
     }
@@ -412,7 +412,7 @@ mod tests {
             wakeup_server,
             shutdown_server,
             pinger,
-            always_off,
+            Arc::new(always_off),
             Arc::new(always_on),
         );
     }
@@ -454,7 +454,7 @@ mod tests {
             wakeup_server,
             shutdown_server,
             pinger,
-            always_off,
+            Arc::new(always_off),
             Arc::new(always_on),
         );
 
@@ -491,7 +491,7 @@ mod tests {
             wakeup_server,
             shutdown_server,
             pinger,
-            always_off,
+            Arc::new(always_off),
             Arc::new(always_on),
         );
 
@@ -561,7 +561,7 @@ mod tests {
             wakeup_server,
             shutdown_server,
             pinger,
-            always_off,
+            Arc::new(always_off),
             Arc::new(always_on),
         );
 
@@ -600,7 +600,7 @@ mod tests {
             wakeup_server,
             shutdown_server,
             pinger,
-            always_off,
+            Arc::new(always_off),
             Arc::new(always_on),
         );
 
@@ -662,7 +662,7 @@ mod tests {
             wakeup_server,
             shutdown_server,
             pinger,
-            always_off,
+            Arc::new(always_off),
             Arc::new(always_on),
         );
 
@@ -712,7 +712,7 @@ mod tests {
             wakeup_server,
             shutdown_server,
             pinger,
-            always_off,
+            Arc::new(always_off),
             Arc::new(always_on),
         );
 
@@ -779,7 +779,7 @@ mod tests {
             wakeup_server,
             shutdown_server,
             pinger,
-            always_off,
+            Arc::new(always_off),
             Arc::new(always_on),
         );
 
@@ -830,7 +830,7 @@ mod tests {
             wakeup_server,
             shutdown_server,
             pinger,
-            always_off,
+            Arc::new(always_off),
             Arc::new(always_on),
         );
 
@@ -899,7 +899,7 @@ mod tests {
             wakeup_server,
             shutdown_server,
             pinger,
-            always_off,
+            Arc::new(always_off),
             Arc::new(always_on),
         );
 
@@ -1048,7 +1048,7 @@ mod tests {
             wakeup_server,
             shutdown_server,
             pinger,
-            always_off,
+            Arc::new(always_off),
             Arc::new(always_on),
         );
 
@@ -1116,7 +1116,7 @@ mod tests {
             wakeup_server,
             shutdown_server,
             pinger,
-            always_off,
+            Arc::new(always_off),
             Arc::new(always_on),
         );
 
@@ -1168,7 +1168,7 @@ mod tests {
             wakeup_server,
             shutdown_server,
             pinger,
-            always_off,
+            Arc::new(always_off),
             Arc::new(always_on),
         );
 

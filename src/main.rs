@@ -44,7 +44,7 @@ fn run(
     wakeup_server: Box<dyn networking::WakeupServer>,
     shutdown_server: Box<dyn networking::ShutdownServer>,
     pinger: Box<dyn networking::Pinger>,
-    always_off: Box<dyn utils::AlwaysOff>,
+    always_off: Arc<dyn utils::AlwaysOff>,
     always_on: Arc<dyn utils::AlwaysOn>,
 ) -> exitcode::ExitCode {
     // check if a manual option (wakeup / shutdown) has been provided
@@ -98,7 +98,7 @@ fn process(
     wakeup_server: Box<dyn networking::WakeupServer>,
     shutdown_server: Box<dyn networking::ShutdownServer>,
     pinger: Box<dyn networking::Pinger>,
-    always_off: Box<dyn utils::AlwaysOff>,
+    always_off: Arc<dyn utils::AlwaysOff>,
     always_on: Arc<dyn utils::AlwaysOn>,
 ) -> exitcode::ExitCode {
     // create the tokio runtime
@@ -116,6 +116,7 @@ fn process(
     // run the main code asynchronously
     info!("monitoring the network for activity...");
     let monitoring = {
+        let always_off = always_off.clone();
         let always_on = always_on.clone();
         rt.spawn(async move {
             let mut monitor = monitor::Monitor::new(
@@ -152,7 +153,13 @@ fn process(
             let ip = config.api.web.ip;
             let port = config.api.web.port;
 
-            let server = web::Server::new(PKG_NAME, PKG_VERSION, config, always_on.clone());
+            let server = web::Server::new(
+                PKG_NAME,
+                PKG_VERSION,
+                config,
+                always_off.clone(),
+                always_on.clone(),
+            );
 
             debug!("starting the web API...");
             if let Err(e) = server.launch(ip, port, log_level).await {
@@ -282,7 +289,7 @@ fn main() {
     let pinger = Box::new(networking::FastPinger::new(None));
 
     // instantiate an AlwaysOffFile / AlwaysOnFile
-    let always_off = Box::new(utils::AlwaysOffFile::from(&config.api.files));
+    let always_off = Arc::new(utils::AlwaysOffFile::from(&config.api.files));
     let always_on = Arc::new(utils::AlwaysOnFile::from(&config.api.files));
 
     // run the monitoring process
