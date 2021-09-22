@@ -1,21 +1,32 @@
 use super::api::*;
 
 use crate::configuration::Configuration;
+use crate::utils::AlwaysOn;
 
 use log::warn;
+
+use std::sync::Arc;
 
 pub struct Server {
     name: String,
     version: String,
     config: Configuration,
+
+    always_on: Arc<dyn AlwaysOn>,
 }
 
 impl Server {
-    pub fn new(name: &str, version: &str, config: Configuration) -> Self {
+    pub fn new(
+        name: &str,
+        version: &str,
+        config: Configuration,
+        always_on: Arc<dyn AlwaysOn>,
+    ) -> Self {
         Self {
             name: name.to_string(),
             version: version.to_string(),
             config,
+            always_on,
         }
     }
 
@@ -41,8 +52,12 @@ impl Server {
         };
 
         let server = rocket::custom(&config)
-            .mount("/api/v1/", rocket::routes![get_config])
+            .mount(
+                "/api/v1/",
+                rocket::routes![get_config, get_always_on, post_always_on, delete_always_on],
+            )
             .manage(self.config.clone())
+            .manage(self.always_on.clone())
             .launch();
         server.await
     }

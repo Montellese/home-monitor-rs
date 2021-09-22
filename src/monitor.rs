@@ -5,6 +5,7 @@ use super::utils::{AlwaysOff, AlwaysOn, Instant};
 use log::{debug, error, info, warn};
 
 use std::ops::Sub;
+use std::sync::Arc;
 use std::time::Duration;
 
 const CHANGE_TIMEOUT: Duration = Duration::from_secs(120);
@@ -19,7 +20,7 @@ pub struct Monitor {
     always_off_state: bool,
     always_off: Box<dyn AlwaysOff>,
     always_on_state: bool,
-    always_on: Box<dyn AlwaysOn>,
+    always_on: Arc<dyn AlwaysOn>,
 
     last_ping: Instant,
     last_change: Instant,
@@ -38,7 +39,7 @@ impl Monitor {
         shutdown_server: Box<dyn ShutdownServer>,
         pinger: Box<dyn Pinger>,
         always_off: Box<dyn AlwaysOff>,
-        always_on: Box<dyn AlwaysOn>,
+        always_on: Arc<dyn AlwaysOn>,
     ) -> Self {
         // get a mutable binding to pinger
         let mut mut_pinger = pinger;
@@ -285,14 +286,14 @@ mod tests {
         Box<crate::networking::MockShutdownServer>,
         Box<crate::networking::MockPinger>,
         Box<crate::utils::MockAlwaysOff>,
-        Box<crate::utils::MockAlwaysOn>,
+        crate::utils::MockAlwaysOn,
     ) {
         (
             Box::new(crate::networking::MockWakeupServer::new()),
             Box::new(crate::networking::MockShutdownServer::new()),
             Box::new(crate::networking::MockPinger::new()),
             Box::new(crate::utils::MockAlwaysOff::new()),
-            Box::new(crate::utils::MockAlwaysOn::new()),
+            crate::utils::MockAlwaysOn::new(),
         )
     }
 
@@ -331,7 +332,7 @@ mod tests {
             shutdown_server,
             pinger,
             always_off,
-            always_on,
+            Arc::new(always_on),
         );
     }
 
@@ -361,7 +362,7 @@ mod tests {
             shutdown_server,
             pinger,
             always_off,
-            always_on,
+            Arc::new(always_on),
         );
     }
 
@@ -412,7 +413,7 @@ mod tests {
             shutdown_server,
             pinger,
             always_off,
-            always_on,
+            Arc::new(always_on),
         );
     }
 
@@ -454,7 +455,7 @@ mod tests {
             shutdown_server,
             pinger,
             always_off,
-            always_on,
+            Arc::new(always_on),
         );
 
         monitor.run_once();
@@ -491,7 +492,7 @@ mod tests {
             shutdown_server,
             pinger,
             always_off,
-            always_on,
+            Arc::new(always_on),
         );
 
         monitor.run_once();
@@ -561,7 +562,7 @@ mod tests {
             shutdown_server,
             pinger,
             always_off,
-            always_on,
+            Arc::new(always_on),
         );
 
         // advance FakeClock by at least ping interval (1s)
@@ -600,7 +601,7 @@ mod tests {
             shutdown_server,
             pinger,
             always_off,
-            always_on,
+            Arc::new(always_on),
         );
 
         monitor.run_once();
@@ -662,7 +663,7 @@ mod tests {
             shutdown_server,
             pinger,
             always_off,
-            always_on,
+            Arc::new(always_on),
         );
 
         // advance FakeClock by at least ping interval (1s)
@@ -712,7 +713,7 @@ mod tests {
             shutdown_server,
             pinger,
             always_off,
-            always_on,
+            Arc::new(always_on),
         );
 
         // advance FakeClock by at least ping interval (1s)
@@ -779,7 +780,7 @@ mod tests {
             shutdown_server,
             pinger,
             always_off,
-            always_on,
+            Arc::new(always_on),
         );
 
         // advance FakeClock by at least ping interval (1s)
@@ -830,7 +831,7 @@ mod tests {
             shutdown_server,
             pinger,
             always_off,
-            always_on,
+            Arc::new(always_on),
         );
 
         // advance FakeClock by at least ping interval (1s)
@@ -899,7 +900,7 @@ mod tests {
             shutdown_server,
             pinger,
             always_off,
-            always_on,
+            Arc::new(always_on),
         );
 
         // advance FakeClock by at least ping interval (1s)
@@ -1048,7 +1049,7 @@ mod tests {
             shutdown_server,
             pinger,
             always_off,
-            always_on,
+            Arc::new(always_on),
         );
 
         // advance FakeClock by at least ping interval (1s)
@@ -1116,7 +1117,7 @@ mod tests {
             shutdown_server,
             pinger,
             always_off,
-            always_on,
+            Arc::new(always_on),
         );
 
         // advance FakeClock by at least ping interval (1s)
@@ -1168,7 +1169,7 @@ mod tests {
             shutdown_server,
             pinger,
             always_off,
-            always_on,
+            Arc::new(always_on),
         );
 
         // advance FakeClock by at least ping interval (1s)

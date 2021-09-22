@@ -4,6 +4,7 @@ use log::{debug, error, info};
 use simplelog::{LevelFilter, SimpleLogger};
 
 use std::path::Path;
+use std::sync::Arc;
 use std::time::Duration;
 
 mod configuration;
@@ -44,7 +45,7 @@ fn run(
     shutdown_server: Box<dyn networking::ShutdownServer>,
     pinger: Box<dyn networking::Pinger>,
     always_off: Box<dyn utils::AlwaysOff>,
-    always_on: Box<dyn utils::AlwaysOn>,
+    always_on: Arc<dyn utils::AlwaysOn>,
 ) -> exitcode::ExitCode {
     // check if a manual option (wakeup / shutdown) has been provided
     if args.wakeup {
@@ -98,7 +99,7 @@ fn process(
     shutdown_server: Box<dyn networking::ShutdownServer>,
     pinger: Box<dyn networking::Pinger>,
     always_off: Box<dyn utils::AlwaysOff>,
-    always_on: Box<dyn utils::AlwaysOn>,
+    always_on: Arc<dyn utils::AlwaysOn>,
 ) -> exitcode::ExitCode {
     // create the tokio runtime
     let rt = tokio::runtime::Builder::new_multi_thread()
@@ -114,25 +115,28 @@ fn process(
 
     // run the main code asynchronously
     info!("monitoring the network for activity...");
-    let monitoring = rt.spawn(async move {
-        let mut monitor = monitor::Monitor::new(
-            ping_interval,
-            server,
-            machines,
-            wakeup_server,
-            shutdown_server,
-            pinger,
-            always_off,
-            always_on,
-        );
+    let monitoring = {
+        let always_on = always_on.clone();
+        rt.spawn(async move {
+            let mut monitor = monitor::Monitor::new(
+                ping_interval,
+                server,
+                machines,
+                wakeup_server,
+                shutdown_server,
+                pinger,
+                always_off,
+                always_on,
+            );
 
-        let mut interval = tokio::time::interval(Duration::from_secs(1));
+            let mut interval = tokio::time::interval(Duration::from_secs(1));
 
-        loop {
-            interval.tick().await;
-            monitor.run_once();
-        }
-    });
+            loop {
+                interval.tick().await;
+                monitor.run_once();
+            }
+        })
+    };
 
     let rocket = rt.spawn(async move {
         // only start the web API if a valid port is configured
@@ -148,7 +152,7 @@ fn process(
             let ip = config.api.web.ip;
             let port = config.api.web.port;
 
-            let server = web::Server::new(PKG_NAME, PKG_VERSION, config);
+            let server = web::Server::new(PKG_NAME, PKG_VERSION, config, always_on.clone());
 
             debug!("starting the web API...");
             if let Err(e) = server.launch(ip, port, log_level).await {
@@ -279,7 +283,7 @@ fn main() {
 
     // instantiate an AlwaysOffFile / AlwaysOnFile
     let always_off = Box::new(utils::AlwaysOffFile::from(&config.api.files));
-    let always_on = Box::new(utils::AlwaysOnFile::from(&config.api.files));
+    let always_on = Arc::new(utils::AlwaysOnFile::from(&config.api.files));
 
     // run the monitoring process
     let result = run(
