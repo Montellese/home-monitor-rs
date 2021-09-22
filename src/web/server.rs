@@ -73,6 +73,7 @@ impl Server {
                 "/api/v1/",
                 rocket::routes![
                     get_config,
+                    get_status,
                     get_always_off,
                     post_always_off,
                     delete_always_off,
