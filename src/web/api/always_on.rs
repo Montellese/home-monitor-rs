@@ -1,6 +1,7 @@
+use super::result;
+
 use crate::utils::AlwaysOn;
 
-use rocket::http::Status;
 use rocket::serde::json::Json;
 use serde::Serialize;
 
@@ -21,19 +22,19 @@ pub fn get_always_on(state: &rocket::State<Arc<dyn AlwaysOn>>) -> Json<AlwaysOnR
 #[rocket::post("/always_on")]
 pub fn post_always_on(
     state: &rocket::State<Arc<dyn AlwaysOn>>,
-) -> Result<Json<AlwaysOnResponse>, (Status, String)> {
-    match state.set_always_on() {
+) -> result::Result<Json<AlwaysOnResponse>> {
+    match result::handle(state.set_always_on()) {
         Ok(_) => Ok(Json(AlwaysOnResponse { always_on: true })),
-        Err(e) => Err((Status::InternalServerError, e.to_string())),
+        Err(e) => Err(e),
     }
 }
 
 #[rocket::delete("/always_on")]
 pub fn delete_always_on(
     state: &rocket::State<Arc<dyn AlwaysOn>>,
-) -> Result<Json<AlwaysOnResponse>, (Status, String)> {
-    match state.reset_always_on() {
+) -> result::Result<Json<AlwaysOnResponse>> {
+    match result::handle(state.reset_always_on()) {
         Ok(_) => Ok(Json(AlwaysOnResponse { always_on: false })),
-        Err(e) => Err((Status::InternalServerError, e.to_string())),
+        Err(e) => Err(e),
     }
 }
