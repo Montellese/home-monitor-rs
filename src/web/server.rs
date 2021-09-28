@@ -1,7 +1,7 @@
 use super::api::*;
 
 use crate::configuration::Configuration;
-use crate::networking::WakeupServer;
+use crate::networking::{ShutdownServer, WakeupServer};
 use crate::utils::{AlwaysOff, AlwaysOn};
 
 use log::warn;
@@ -17,6 +17,7 @@ pub struct Server {
     always_on: Arc<dyn AlwaysOn>,
 
     wakeup_server: Arc<dyn WakeupServer>,
+    shutdown_server: Arc<dyn ShutdownServer>,
 }
 
 impl Server {
@@ -27,6 +28,7 @@ impl Server {
         always_off: Arc<dyn AlwaysOff>,
         always_on: Arc<dyn AlwaysOn>,
         wakeup_server: Arc<dyn WakeupServer>,
+        shutdown_server: Arc<dyn ShutdownServer>,
     ) -> Self {
         Self {
             name: name.to_string(),
@@ -35,6 +37,7 @@ impl Server {
             always_off,
             always_on,
             wakeup_server,
+            shutdown_server,
         }
     }
 
@@ -71,12 +74,14 @@ impl Server {
                     post_always_on,
                     delete_always_on,
                     put_wakeup,
+                    put_shutdown,
                 ],
             )
             .manage(self.config.clone())
             .manage(self.always_off.clone())
             .manage(self.always_on.clone())
             .manage(self.wakeup_server.clone())
+            .manage(self.shutdown_server.clone())
             .launch();
         server.await
     }

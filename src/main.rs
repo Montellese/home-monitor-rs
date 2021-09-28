@@ -42,7 +42,7 @@ fn run(
     server: dom::Server,
     machines: Vec<dom::Machine>,
     wakeup_server: Arc<dyn networking::WakeupServer>,
-    shutdown_server: Box<dyn networking::ShutdownServer>,
+    shutdown_server: Arc<dyn networking::ShutdownServer>,
     pinger: Box<dyn networking::Pinger>,
     always_off: Arc<dyn utils::AlwaysOff>,
     always_on: Arc<dyn utils::AlwaysOn>,
@@ -96,7 +96,7 @@ fn process(
     server: dom::Server,
     machines: Vec<dom::Machine>,
     wakeup_server: Arc<dyn networking::WakeupServer>,
-    shutdown_server: Box<dyn networking::ShutdownServer>,
+    shutdown_server: Arc<dyn networking::ShutdownServer>,
     pinger: Box<dyn networking::Pinger>,
     always_off: Arc<dyn utils::AlwaysOff>,
     always_on: Arc<dyn utils::AlwaysOn>,
@@ -119,6 +119,7 @@ fn process(
         let always_off = always_off.clone();
         let always_on = always_on.clone();
         let wakeup_server = wakeup_server.clone();
+        let shutdown_server = shutdown_server.clone();
         rt.spawn(async move {
             let mut monitor = monitor::Monitor::new(
                 ping_interval,
@@ -161,6 +162,7 @@ fn process(
                 always_off.clone(),
                 always_on.clone(),
                 wakeup_server.clone(),
+                shutdown_server.clone(),
             );
 
             debug!("starting the web API...");
@@ -285,7 +287,7 @@ fn main() {
     let wakeup_server = Arc::new(networking::WakeOnLanServer::new(&server));
 
     // instantiate a Ssh2ShutdownServer
-    let shutdown_server = Box::new(networking::Ssh2ShutdownServer::new(&server));
+    let shutdown_server = Arc::new(networking::Ssh2ShutdownServer::new(&server));
 
     // instantiate the FastPinger
     let pinger = Box::new(networking::FastPinger::new(None));
