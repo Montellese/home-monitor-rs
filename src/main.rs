@@ -161,9 +161,10 @@ fn main() {
     }
 
     {
-        // log the always on file
-        let files = &config.files;
+        // log the always on / off files
+        let files = &config.api.files;
         info!("always on: {}", files.always_on);
+        info!("always off: {}", files.always_off);
     }
 
     // log the details of the configured network interface
@@ -232,8 +233,8 @@ fn main() {
     let pinger = Box::new(networking::FastPinger::new(None));
 
     // instantiate an AlwaysOffFile / AlwaysOnFile
-    let always_off = Box::new(utils::AlwaysOffFile::from(&config.files));
-    let always_on = Box::new(utils::AlwaysOnFile::from(&config.files));
+    let always_off = Box::new(utils::AlwaysOffFile::from(&config.api.files));
+    let always_on = Box::new(utils::AlwaysOnFile::from(&config.api.files));
 
     // run the monitoring process
     std::process::exit(run(

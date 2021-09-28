@@ -5,10 +5,12 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 
+mod api;
 mod files;
 mod machine;
 mod network;
 
+pub use api::Api;
 pub use files::Files;
 pub use machine::{Machine, Server};
 pub use network::{Network, Ping};
@@ -18,7 +20,7 @@ pub const LOCATION: &str = "/etc/home-monitor/home-monitor.json";
 #[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Configuration {
-    pub files: files::Files,
+    pub api: api::Api,
     pub network: network::Network,
     pub server: machine::Server,
     pub machines: Vec<machine::Machine>,
@@ -60,15 +62,17 @@ mod tests {
     #[test]
     fn test_parse_from_str() {
         let config_json = r#"{
-            "files": {
-                "alwaysOff": "/etc/home-monitor/alwaysoff",
-                "alwaysOn": "/etc/home-monitor/alwayson"
-            },
             "network": {
                 "interface": "eth0",
                 "ping": {
                     "interval": 6,
                     "timeout": 2
+                }
+            },
+            "api": {
+                "files": {
+                    "alwaysOff": "/etc/home-monitor/alwaysoff",
+                    "alwaysOn": "/etc/home-monitor/alwayson"
                 }
             },
             "server": {

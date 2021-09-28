@@ -50,15 +50,17 @@ OPTIONS:
 
 ```json
 {
-    "files": {
-        "alwaysOff": "/etc/home-monitor/alwaysoff",
-        "alwaysOn": "/etc/home-monitor/alwayson"
-    },
     "network": {
         "interface": "eth0",
         "ping": {
             "interval": 6,
             "timeout": 2
+        }
+    },
+    "api": {
+        "files": {
+            "alwaysOff": "/etc/home-monitor/alwaysoff",
+            "alwaysOn": "/etc/home-monitor/alwayson"
         }
     },
     "server": {
