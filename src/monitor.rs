@@ -212,8 +212,8 @@ impl Monitor {
             }
         }
 
-        if is_online != machine_was_online {
-            if is_online {
+        if machine.is_online != machine_was_online {
+            if machine.is_online {
                 info!("{} is now online", machine);
             } else {
                 info!("{} is now offline", machine);
