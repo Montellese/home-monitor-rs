@@ -75,9 +75,11 @@ impl Monitor {
             };
         });
 
-        if mut_machines.is_empty() {
-            panic!("no machines to monitor {}", server);
-        }
+        assert!(
+            !mut_machines.is_empty(),
+            "no machines to monitor {}",
+            server
+        );
 
         // send the initial state of the server and all machines
         Self::publish_machine_update(&*sender, communication::Device::Server(server.clone()));
@@ -164,9 +166,9 @@ impl Monitor {
             }
 
             // update the online state of all machines
-            for mut machine in self.machines.iter_mut() {
+            for machine in self.machines.iter_mut() {
                 let is_online = self.pinger.is_online(&machine.ip);
-                if Self::update_machine_online(&mut machine, is_online) {
+                if Self::update_machine_online(machine, is_online) {
                     Self::publish_machine_update(
                         &*self.sender,
                         communication::Device::Machine(machine.clone()),
