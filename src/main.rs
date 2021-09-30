@@ -113,15 +113,20 @@ fn process(
     debug!("setting up signal handling for SIGTERM");
     let sigterm = tokio::signal::ctrl_c();
 
+    // prepare a channel to communicate updates from monitoring to the web API
+    let (tx, _) = dom::communication::mpsc_channel();
+
     // run the main code asynchronously
     info!("monitoring the network for activity...");
     let monitoring = {
+        let sender = Box::new(tx);
         let always_off = always_off.clone();
         let always_on = always_on.clone();
         let wakeup_server = wakeup_server.clone();
         let shutdown_server = shutdown_server.clone();
         rt.spawn(async move {
             let mut monitor = monitor::Monitor::new(
+                sender,
                 ping_interval,
                 server,
                 machines,
