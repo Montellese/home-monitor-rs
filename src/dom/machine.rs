@@ -9,7 +9,6 @@ use super::super::utils::Instant;
 #[derive(Clone, Debug)]
 pub struct Machine {
     pub name: String,
-    pub mac: String,
     pub ip: String,
 
     pub last_seen_timeout: u64,
@@ -20,10 +19,9 @@ pub struct Machine {
 
 impl Machine {
     #[allow(dead_code)]
-    pub fn new(name: &str, mac: &str, ip: &str, last_seen_timeout: u64) -> Self {
+    pub fn new(name: &str, ip: &str, last_seen_timeout: u64) -> Self {
         Self {
             name: name.to_string(),
-            mac: mac.to_string(),
             ip: ip.to_string(),
             last_seen_timeout,
             is_online: false,
@@ -43,12 +41,7 @@ impl Machine {
 
 impl From<&configuration::Machine> for Machine {
     fn from(machine: &configuration::Machine) -> Self {
-        Self::new(
-            &machine.name,
-            &machine.mac,
-            &machine.ip,
-            machine.last_seen_timeout,
-        )
+        Self::new(&machine.name, &machine.ip, machine.last_seen_timeout)
     }
 }
 
@@ -74,6 +67,7 @@ impl fmt::Display for Machine {
 pub struct Server {
     pub machine: Machine,
 
+    pub mac: String,
     pub username: String,
     pub password: String,
 }
@@ -82,14 +76,15 @@ impl Server {
     #[allow(dead_code)]
     pub fn new(
         name: &str,
-        mac: &str,
         ip: &str,
         last_seen_timeout: u64,
+        mac: &str,
         username: &str,
         password: &str,
     ) -> Self {
         Self {
-            machine: Machine::new(name, mac, ip, last_seen_timeout),
+            machine: Machine::new(name, ip, last_seen_timeout),
+            mac: mac.to_string(),
             username: username.to_string(),
             password: password.to_string(),
         }
@@ -100,6 +95,7 @@ impl From<&configuration::Server> for Server {
     fn from(server: &configuration::Server) -> Self {
         Self {
             machine: Machine::from(&server.machine),
+            mac: server.mac.clone(),
             username: server.username.clone(),
             password: server.password.clone(),
         }

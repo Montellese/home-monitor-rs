@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 pub struct Machine {
     pub name: String,
-    pub mac: String,
     pub ip: String,
 
     #[serde(rename = "timeout")]
@@ -24,6 +23,7 @@ pub struct Server {
     #[serde(flatten)]
     pub machine: Machine,
 
+    pub mac: String,
     pub username: String,
     pub password: String,
 }

@@ -16,8 +16,10 @@ use crate::dom::communication::SharedStateMutex;
 #[serde(rename_all = "camelCase")]
 pub struct Device {
     pub name: String,
-    pub mac: String,
     pub ip: String,
+    #[serde(default)]
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub mac: String,
 
     pub last_seen_timeout: u64,
     pub is_online: bool,
@@ -34,8 +36,8 @@ impl From<&dom::Machine> for Device {
     fn from(machine: &dom::Machine) -> Self {
         Self {
             name: machine.name.clone(),
-            mac: machine.mac.clone(),
             ip: machine.ip.clone(),
+            mac: String::new(),
             last_seen_timeout: machine.last_seen_timeout,
             is_online: machine.is_online,
             last_seen: machine.last_seen_date,
@@ -51,7 +53,10 @@ impl From<dom::Server> for Device {
 
 impl From<&dom::Server> for Device {
     fn from(server: &dom::Server) -> Self {
-        Device::from(&server.machine)
+        let mut device = Device::from(&server.machine);
+        device.mac = server.mac.clone();
+
+        device
     }
 }
 

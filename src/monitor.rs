@@ -278,7 +278,6 @@ mod tests {
     static SERVER_PASSWORD: &str = "password";
 
     static MACHINE_NAME: &str = "Test Machine";
-    static MACHINE_MAC: &str = "ff:ee:dd:cc:bb:faa";
     static MACHINE_IP: &str = "10.0.0.2";
     const MACHINE_LAST_SEEN_TIMEOUT: u64 = 300;
 
@@ -296,9 +295,9 @@ mod tests {
     fn server() -> Server {
         Server::new(
             SERVER_NAME,
-            SERVER_MAC,
             SERVER_IP,
             SERVER_LAST_SEEN_TIMEOUT,
+            SERVER_MAC,
             SERVER_USERNAME,
             SERVER_PASSWORD,
         )
@@ -306,12 +305,7 @@ mod tests {
 
     #[fixture]
     fn machine() -> Machine {
-        Machine::new(
-            MACHINE_NAME,
-            MACHINE_MAC,
-            MACHINE_IP,
-            MACHINE_LAST_SEEN_TIMEOUT,
-        )
+        Machine::new(MACHINE_NAME, MACHINE_IP, MACHINE_LAST_SEEN_TIMEOUT)
     }
 
     fn default_mocks() -> (
@@ -342,9 +336,9 @@ mod tests {
 
         let server = Server::new(
             SERVER_NAME,
-            SERVER_MAC,
             "",
             SERVER_LAST_SEEN_TIMEOUT,
+            SERVER_MAC,
             SERVER_USERNAME,
             SERVER_PASSWORD,
         );
@@ -414,12 +408,7 @@ mod tests {
 
         let machines = vec![
             machine,
-            Machine::new(
-                "Test Machine 2",
-                "bb:cc:dd:ee:ff:gg",
-                MACHINE_IP,
-                MACHINE_LAST_SEEN_TIMEOUT,
-            ),
+            Machine::new("Test Machine 2", MACHINE_IP, MACHINE_LAST_SEEN_TIMEOUT),
         ];
 
         // EXPECTATIONS

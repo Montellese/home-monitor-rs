@@ -92,7 +92,6 @@ mod tests {
             "machines": [
                 {
                     "name": "My Machine",
-                    "mac": "ff:ee:dd:cc:bb:aa",
                     "ip": "192.168.1.2",
                     "timeout": 300
                 }

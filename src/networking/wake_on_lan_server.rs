@@ -12,7 +12,7 @@ impl WakeOnLanServer {
     pub fn new(server: &dom::Server) -> Self {
         Self {
             name: server.machine.name.to_string(),
-            mac: server.machine.mac.to_string(),
+            mac: server.mac.to_string(),
         }
     }
 }

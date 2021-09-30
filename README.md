@@ -89,7 +89,6 @@ OPTIONS:
     "machines": [
         {
             "name": "My Machine",
-            "mac": "ff:ee:dd:cc:bb:aa",
             "ip": "192.168.1.254",
             "timeout": 300
         }

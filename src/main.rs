@@ -276,7 +276,7 @@ fn main() {
             server.username,
             server.machine.name,
             server.machine.ip,
-            server.machine.mac,
+            server.mac,
             server.machine.last_seen_timeout
         );
     }
@@ -287,8 +287,8 @@ fn main() {
         info!("machines ({}):", machines.len());
         for machine in machines.iter() {
             info!(
-                "  {}: {} [{}] ({}s)",
-                machine.name, machine.ip, machine.mac, machine.last_seen_timeout
+                "  {}: {} ({}s)",
+                machine.name, machine.ip, machine.last_seen_timeout
             );
         }
     }
