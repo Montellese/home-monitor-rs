@@ -1,7 +1,6 @@
-use super::Files;
-use super::Web;
-
 use serde::{Deserialize, Serialize};
+
+use super::{Files, Web};
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]

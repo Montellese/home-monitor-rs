@@ -1,12 +1,12 @@
-use super::dom::{communication, Machine, Server};
-use super::networking::{Pinger, ShutdownServer, WakeupServer};
-use super::utils::{AlwaysOff, AlwaysOn, Instant};
-
-use log::{debug, error, info, trace, warn};
-
 use std::ops::Sub;
 use std::sync::Arc;
 use std::time::Duration;
+
+use log::{debug, error, info, trace, warn};
+
+use super::dom::{communication, Machine, Server};
+use super::networking::{Pinger, ShutdownServer, WakeupServer};
+use super::utils::{AlwaysOff, AlwaysOn, Instant};
 
 const CHANGE_TIMEOUT: Duration = Duration::from_secs(120);
 
@@ -258,15 +258,15 @@ impl Monitor {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::convert::TryInto;
+    use std::ops::Add;
+    use std::sync::mpsc::RecvError;
 
     use mockall::predicate::*;
     use mockall::Sequence;
     use rstest::*;
 
-    use std::convert::TryInto;
-    use std::ops::Add;
-    use std::sync::mpsc::RecvError;
+    use super::*;
 
     static PING_INTERVAL: Duration = Duration::from_secs(1);
 

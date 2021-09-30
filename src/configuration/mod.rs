@@ -1,9 +1,9 @@
-use serde::{Deserialize, Serialize};
-
 use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
+
+use serde::{Deserialize, Serialize};
 
 mod api;
 mod files;

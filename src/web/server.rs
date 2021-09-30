@@ -1,13 +1,12 @@
-use super::api::*;
+use std::sync::Arc;
 
+use log::warn;
+
+use super::api::*;
 use crate::configuration::Configuration;
 use crate::dom::communication::SharedStateMutex;
 use crate::networking::{ShutdownServer, WakeupServer};
 use crate::utils::{AlwaysOff, AlwaysOn};
-
-use log::warn;
-
-use std::sync::Arc;
 
 pub struct Server {
     name: String,

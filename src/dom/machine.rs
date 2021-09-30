@@ -1,10 +1,10 @@
-use super::super::configuration;
-use super::super::utils::Instant;
+use std::convert::From;
+use std::fmt;
 
 use chrono::{offset, DateTime, Utc};
 
-use std::convert::From;
-use std::fmt;
+use super::super::configuration;
+use super::super::utils::Instant;
 
 #[derive(Clone, Debug)]
 pub struct Machine {

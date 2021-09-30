@@ -1,17 +1,16 @@
-use super::result;
-
-use crate::dom;
-use crate::dom::communication;
-use crate::dom::communication::SharedStateMutex;
+use std::convert::From;
+use std::option::Option;
+use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
 use log::error;
 use rocket::serde::json::Json;
 use serde::Serialize;
 
-use std::convert::From;
-use std::option::Option;
-use std::sync::Arc;
+use super::result;
+use crate::dom;
+use crate::dom::communication;
+use crate::dom::communication::SharedStateMutex;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]

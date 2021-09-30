@@ -8,8 +8,7 @@ pub use mpsc_sender::MpscSender;
 #[cfg(test)]
 pub use sender::MockSender;
 pub use sender::Sender;
-pub use shared_state::SharedState;
-pub use shared_state::SharedStateMutex;
+pub use shared_state::{SharedState, SharedStateMutex};
 
 pub type MpscReceiver = tokio::sync::mpsc::UnboundedReceiver<Device>;
 

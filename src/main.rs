@@ -1,11 +1,10 @@
-use clap::Clap;
-
-use log::{debug, error, info};
-use simplelog::{LevelFilter, SimpleLogger};
-
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+
+use clap::Clap;
+use log::{debug, error, info};
+use simplelog::{LevelFilter, SimpleLogger};
 
 mod configuration;
 mod dom;

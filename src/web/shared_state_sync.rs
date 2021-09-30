@@ -1,8 +1,8 @@
-use crate::dom::communication::{MpscReceiver, SharedStateMutex};
+use std::sync::Arc;
 
 use log::debug;
 
-use std::sync::Arc;
+use crate::dom::communication::{MpscReceiver, SharedStateMutex};
 
 pub struct SharedStateSync {
     shared_state: Arc<SharedStateMutex>,

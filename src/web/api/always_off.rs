@@ -1,11 +1,10 @@
-use super::result;
-
-use crate::utils::AlwaysOff;
+use std::sync::Arc;
 
 use rocket::serde::json::Json;
 use serde::Serialize;
 
-use std::sync::Arc;
+use super::result;
+use crate::utils::AlwaysOff;
 
 #[derive(Serialize)]
 pub struct AlwaysOffResponse {

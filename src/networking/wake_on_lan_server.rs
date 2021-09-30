@@ -1,8 +1,7 @@
-use super::super::dom;
-
-use super::WakeupServer;
-
 use log::debug;
+
+use super::super::dom;
+use super::WakeupServer;
 
 pub struct WakeOnLanServer {
     name: String,

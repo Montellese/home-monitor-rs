@@ -1,6 +1,6 @@
-use super::super::{Machine, Server};
-
 use std::fmt;
+
+use super::super::{Machine, Server};
 
 #[derive(Clone, Debug)]
 pub enum Device {

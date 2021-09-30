@@ -1,12 +1,12 @@
-use super::Pinger;
+use std::collections::HashMap;
+use std::net::{AddrParseError, IpAddr};
+use std::sync::mpsc::{Receiver, RecvError};
 
 use fastping_rs::PingResult;
 use fastping_rs::PingResult::{Idle, Receive};
 use log::{error, warn};
 
-use std::collections::HashMap;
-use std::net::{AddrParseError, IpAddr};
-use std::sync::mpsc::{Receiver, RecvError};
+use super::Pinger;
 
 pub struct FastPinger {
     pinger: fastping_rs::Pinger,

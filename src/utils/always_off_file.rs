@@ -1,8 +1,8 @@
-use super::super::configuration;
-use super::AlwaysOff;
-
 use std::convert::From;
 use std::path::PathBuf;
+
+use super::super::configuration;
+use super::AlwaysOff;
 
 #[derive(Debug)]
 pub struct AlwaysOffFile {
@@ -52,10 +52,10 @@ impl From<&configuration::Files> for AlwaysOffFile {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     use rstest::*;
     use tempfile::*;
+
+    use super::*;
 
     fn get_path(file: &NamedTempFile) -> PathBuf {
         PathBuf::from(file.path())

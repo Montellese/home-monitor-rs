@@ -1,6 +1,6 @@
-use super::{Device, Sender};
-
 use tokio::sync::mpsc;
+
+use super::{Device, Sender};
 
 #[derive(Clone, Debug)]
 pub struct MpscSender {

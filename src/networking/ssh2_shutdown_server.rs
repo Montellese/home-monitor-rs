@@ -1,11 +1,10 @@
-use super::super::dom;
-
-use super::ShutdownError;
-use super::ShutdownServer;
+use std::net::TcpStream;
 
 use log::debug;
 use ssh2::Session;
-use std::net::TcpStream;
+
+use super::super::dom;
+use super::{ShutdownError, ShutdownServer};
 
 pub struct Ssh2ShutdownServer {
     name: String,
