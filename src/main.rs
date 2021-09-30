@@ -181,6 +181,7 @@ fn process(
                 PKG_NAME,
                 PKG_VERSION,
                 config,
+                shared_state,
                 always_off.clone(),
                 always_on.clone(),
                 wakeup_server.clone(),

@@ -1,6 +1,7 @@
 use super::api::*;
 
 use crate::configuration::Configuration;
+use crate::dom::communication::SharedStateMutex;
 use crate::networking::{ShutdownServer, WakeupServer};
 use crate::utils::{AlwaysOff, AlwaysOn};
 
@@ -13,6 +14,8 @@ pub struct Server {
     version: String,
     config: Configuration,
 
+    shared_state: Arc<SharedStateMutex>,
+
     always_off: Arc<dyn AlwaysOff>,
     always_on: Arc<dyn AlwaysOn>,
 
@@ -21,10 +24,12 @@ pub struct Server {
 }
 
 impl Server {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         name: &str,
         version: &str,
         config: Configuration,
+        shared_state: Arc<SharedStateMutex>,
         always_off: Arc<dyn AlwaysOff>,
         always_on: Arc<dyn AlwaysOn>,
         wakeup_server: Arc<dyn WakeupServer>,
@@ -34,6 +39,7 @@ impl Server {
             name: name.to_string(),
             version: version.to_string(),
             config,
+            shared_state,
             always_off,
             always_on,
             wakeup_server,
@@ -78,6 +84,7 @@ impl Server {
                 ],
             )
             .manage(self.config.clone())
+            .manage(self.shared_state.clone())
             .manage(self.always_off.clone())
             .manage(self.always_on.clone())
             .manage(self.wakeup_server.clone())
