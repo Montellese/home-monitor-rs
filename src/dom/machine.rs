@@ -1,6 +1,8 @@
 use super::super::configuration;
 use super::super::utils::Instant;
 
+use chrono::{offset, DateTime, Utc};
+
 use std::convert::From;
 use std::fmt;
 
@@ -13,6 +15,7 @@ pub struct Machine {
     pub last_seen_timeout: u64,
     pub is_online: bool,
     pub last_seen: Option<Instant>,
+    pub last_seen_date: Option<DateTime<Utc>>,
 }
 
 impl Machine {
@@ -25,6 +28,7 @@ impl Machine {
             last_seen_timeout,
             is_online: false,
             last_seen: None,
+            last_seen_date: None,
         }
     }
 
@@ -32,6 +36,7 @@ impl Machine {
         self.is_online = online;
         if online {
             self.last_seen = Some(Instant::now());
+            self.last_seen_date = Some(offset::Utc::now());
         }
     }
 }
