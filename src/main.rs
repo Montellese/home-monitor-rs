@@ -4,7 +4,7 @@ use log::{debug, error, info};
 use simplelog::{LevelFilter, SimpleLogger};
 
 use std::path::Path;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 mod configuration;
@@ -114,7 +114,7 @@ fn process(
     let sigterm = tokio::signal::ctrl_c();
 
     // prepare a channel to communicate updates from monitoring to the web API
-    let (tx, _) = dom::communication::mpsc_channel();
+    let (tx, rx) = dom::communication::mpsc_channel();
 
     // run the main code asynchronously
     info!("monitoring the network for activity...");
@@ -146,9 +146,26 @@ fn process(
         })
     };
 
+    // only start the web API if a valid port is configured
+    let provide_web_api = config.api.web.port > 0;
+
+    // create a shared state of machines
+    let shared_state: Arc<dom::communication::SharedStateMutex> = Arc::new(Mutex::new(
+        dom::communication::SharedState::new(config.machines.len() + 1),
+    ));
+
+    let sync = {
+        let shared_state = shared_state.clone();
+        rt.spawn(async move {
+            if provide_web_api {
+                let mut shared_state_sync = web::SharedStateSync::new(shared_state, rx);
+                shared_state_sync.sync().await;
+            }
+        })
+    };
+
     let rocket = rt.spawn(async move {
-        // only start the web API if a valid port is configured
-        if config.api.web.port > 0 {
+        if provide_web_api {
             // configure logging depending on cli arguments
             let mut log_level = rocket::config::LogLevel::Off;
             if args.verbose {
@@ -181,6 +198,7 @@ fn process(
         tokio::select! {
             _ = sigterm => exitcode::OK,
             _ = monitoring => exitcode::SOFTWARE,
+            _ = sync => exitcode::SOFTWARE,
             _ = rocket => exitcode::SOFTWARE,
         }
     })
