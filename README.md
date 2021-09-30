@@ -16,6 +16,17 @@ In addition to running `home-monitor-rs` as a service it can also be used to man
   - [How to use](#how-to-use)
     - [Configuration](#configuration)
     - [Systemd Service](#systemd-service)
+    - [Web / REST API](#web--rest-api)
+      - [GET /config](#get-config)
+      - [GET /status](#get-status)
+      - [GET /always_off](#get-always_off)
+      - [POST /always_off](#post-always_off)
+      - [DELETE /always_off](#delete-always_off)
+      - [GET /always_on](#get-always_on)
+      - [POST /always_on](#post-always_on)
+      - [DELETE /always_on](#delete-always_on)
+      - [PUT /wakeup](#put-wakeup)
+      - [PUT /shutdown](#put-shutdown)
     - [Command Line Tool](#command-line-tool)
       - [Turn server on](#turn-server-on)
       - [Shut server down](#shut-server-down)
@@ -61,6 +72,10 @@ OPTIONS:
         "files": {
             "alwaysOff": "/etc/home-monitor/alwaysoff",
             "alwaysOn": "/etc/home-monitor/alwayson"
+        },
+        "web": {
+            "ip": "127.0.0.1",
+            "port": 8000
         }
     },
     "server": {
@@ -86,6 +101,8 @@ The `machines` array can contain as many "machines" as necessary. Every configur
 
 The `alwaysOff` file configuration option specifies a file which - if present - forces `home-monitor-rs` to turn the configured `server` off independent of the status of the configured `machines`. Similarly the `alwaysOn` file configuration option specifies a file which - if present - forces `home-monitor-rs` to turn the configured `server` on independent of the status of the configured `machines`.
 
+The `web` configuration in the `api` section can be used to configure an optional web / REST API. If the `web` section is completely missing of the `port` option is `0` the web / REST API is not started. If `ip` contains a valid IP address and `port` a valid HTTP port the web / REST API is automatically started.
+
 ### Systemd Service
 
 To run `home-monitor-rs` as a systemd service use the provided `home-monitor-rs.service` systemd unit file. Once the unit file is in place use
@@ -107,6 +124,56 @@ You can control `home-monitor-rs` as a service using systemd's `systemctl` with 
 ```
 sudo systemctl [status|start|stop|restart|enable|disable] home-monitor-rs
 ```
+
+### Web / REST API
+
+`home-monitor-rs` provides an optional web / REST API to observe and control its behaviour. Based on the configured IP address and port the REST API is available under `http://<IP>:<PORT>/api/v1/` followed by a specific REST endpoint. The following chapters describe the available endpoints.
+
+#### GET /config
+
+This REST endpoints returns the currently used / loaded configuration in JSON format.
+
+#### GET /status
+
+This REST endpoint returns the current status of the monitored server and machines in JSON format.
+
+#### GET /always_off
+
+This REST endpoints returns the current status of the `alwaysOff` feature in the following JSON format:
+```json
+{ "always_off": true }
+```
+
+#### POST /always_off
+
+This REST endpoint activates the `alwaysOff` feature (independent of whether it was already active or not) and returns the new status in the JSON format described in [GET /always_off](#get-always_off).
+
+#### DELETE /always_off
+
+This REST endpoint deactivates the `alwaysOff` feature (independent of whether it was already inactive or not) and returns the new status in the JSON format described in [GET /always_off](#get-always_off).
+
+#### GET /always_on
+
+This REST endpoints returns the current status of the `alwaysOn` feature in the following JSON format:
+```json
+{ "always_on": true }
+```
+
+#### POST /always_on
+
+This REST endpoint activates the `alwaysOn` feature (independent of whether it was already active or not) and returns the new status in the JSON format described in [GET /always_on](#get-always_on).
+
+#### DELETE /always_on
+
+This REST endpoint deactivates the `alwaysOn` feature (independent of whether it was already inactive or not) and returns the new status in the JSON format described in [GET /always_on](#get-always_on).
+
+#### PUT /wakeup
+
+This REST endpoint forces `home-monitor-rs` to wake up the configured server independent of its current status or the status of the monitored machines. This is the same functionality as provided by the [Command Line Tool](#command-line-tool).
+
+#### PUT /shutdown
+
+This REST endpoint forces `home-monitor-rs` to shut down the configured server independent of its current status or the status of the monitored machines. This is the same functionality as provided by the [Command Line Tool](#command-line-tool).
 
 ### Command Line Tool
 
