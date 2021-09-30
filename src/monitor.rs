@@ -2,7 +2,7 @@ use super::dom::{communication, Machine, Server};
 use super::networking::{Pinger, ShutdownServer, WakeupServer};
 use super::utils::{AlwaysOff, AlwaysOn, Instant};
 
-use log::{debug, error, info, warn};
+use log::{debug, error, info, trace, warn};
 
 use std::ops::Sub;
 use std::sync::Arc;
@@ -220,10 +220,10 @@ impl Monitor {
         //   either if it is currently online
         //   or if it has become offline
         if is_online {
-            debug!("received ping response from {}", machine);
+            trace!("received ping response from {}", machine);
             machine.set_online(true)
         } else {
-            debug!("no ping response received from {}", machine);
+            trace!("no ping response received from {}", machine);
 
             if machine_was_online
                 && machine.last_seen.unwrap().elapsed()
