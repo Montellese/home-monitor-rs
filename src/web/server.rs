@@ -2,11 +2,11 @@ use std::sync::Arc;
 
 use log::warn;
 
-use super::api::*;
+use super::api;
 use crate::configuration::Configuration;
+use crate::control::ServerControl;
 use crate::dom::communication::SharedStateMutex;
-use crate::networking::{ShutdownServer, WakeupServer};
-use crate::utils::{AlwaysOff, AlwaysOn};
+use crate::dom::Dependencies;
 
 pub struct Server {
     name: String,
@@ -14,12 +14,8 @@ pub struct Server {
     config: Configuration,
 
     shared_state: Arc<SharedStateMutex>,
-
-    always_off: Arc<dyn AlwaysOff>,
-    always_on: Arc<dyn AlwaysOn>,
-
-    wakeup_server: Arc<dyn WakeupServer>,
-    shutdown_server: Arc<dyn ShutdownServer>,
+    server_controls: Vec<ServerControl>,
+    dependencies: Dependencies,
 }
 
 impl Server {
@@ -29,20 +25,16 @@ impl Server {
         version: &str,
         config: Configuration,
         shared_state: Arc<SharedStateMutex>,
-        always_off: Arc<dyn AlwaysOff>,
-        always_on: Arc<dyn AlwaysOn>,
-        wakeup_server: Arc<dyn WakeupServer>,
-        shutdown_server: Arc<dyn ShutdownServer>,
+        server_controls: Vec<ServerControl>,
+        dependencies: Dependencies,
     ) -> Self {
         Self {
             name: name.to_string(),
             version: version.to_string(),
             config,
             shared_state,
-            always_off,
-            always_on,
-            wakeup_server,
-            shutdown_server,
+            server_controls,
+            dependencies,
         }
     }
 
@@ -71,24 +63,23 @@ impl Server {
             .mount(
                 "/api/v1/",
                 rocket::routes![
-                    get_config,
-                    get_status,
-                    get_always_off,
-                    post_always_off,
-                    delete_always_off,
-                    get_always_on,
-                    post_always_on,
-                    delete_always_on,
-                    put_wakeup,
-                    put_shutdown,
+                    api::get_config,
+                    api::get_status,
+                    api::server::get_status,
+                    api::server::get_always_off,
+                    api::server::post_always_off,
+                    api::server::delete_always_off,
+                    api::server::get_always_on,
+                    api::server::post_always_on,
+                    api::server::delete_always_on,
+                    api::server::put_wakeup,
+                    api::server::put_shutdown,
                 ],
             )
             .manage(self.config.clone())
             .manage(self.shared_state.clone())
-            .manage(self.always_off.clone())
-            .manage(self.always_on.clone())
-            .manage(self.wakeup_server.clone())
-            .manage(self.shutdown_server.clone())
+            .manage(self.server_controls.clone())
+            .manage(self.dependencies.clone())
             .launch();
         server.await
     }

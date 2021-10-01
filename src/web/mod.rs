@@ -1,5 +1,5 @@
 pub mod api;
-
+pub mod serialization;
 mod server;
 mod shared_state_sync;
 

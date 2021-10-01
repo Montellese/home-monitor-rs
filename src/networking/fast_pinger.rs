@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::net::{AddrParseError, IpAddr};
+use std::net::IpAddr;
 use std::sync::mpsc::{Receiver, RecvError};
 
 use fastping_rs::PingResult;
@@ -47,16 +47,16 @@ impl FastPinger {
 }
 
 impl Pinger for FastPinger {
-    fn add_target(&mut self, ip_addr: IpAddr) -> Result<bool, AddrParseError> {
+    fn add_target(&mut self, ip_addr: IpAddr) -> bool {
         // only add the target IP address if it doesn't already exist
         if self.targets.get(&ip_addr).is_none() {
             self.pinger
                 .add_ipaddr(Self::ip_to_string(&ip_addr).as_str());
             self.targets.insert(ip_addr, false);
 
-            Ok(true)
+            true
         } else {
-            Ok(false)
+            false
         }
     }
 

@@ -1,5 +1,5 @@
 use std::convert::From;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use super::super::configuration;
 use super::AlwaysOn;
@@ -11,8 +11,20 @@ pub struct AlwaysOnFile {
 
 impl AlwaysOnFile {
     #[allow(dead_code)]
-    pub fn new(file: PathBuf) -> Self {
+    pub fn new(path: &Path) -> Self {
+        // make sure the given path exists
+        std::fs::create_dir_all(path).unwrap();
+
+        // append alwayson to the path
+        let mut file = path.to_path_buf();
+        file.push("alwayson");
+
         Self { file }
+    }
+
+    #[cfg(test)]
+    pub fn path(&self) -> &Path {
+        &self.file
     }
 }
 
@@ -46,74 +58,66 @@ impl AlwaysOn for AlwaysOnFile {
 
 impl From<&configuration::Files> for AlwaysOnFile {
     fn from(files: &configuration::Files) -> Self {
-        Self::new(PathBuf::from(files.always_on.clone()))
+        Self::new(&files.root)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use rstest::*;
-    use tempfile::*;
+    use temp_dir::*;
 
     use super::*;
 
-    fn get_path(file: &NamedTempFile) -> PathBuf {
-        PathBuf::from(file.path())
+    #[fixture]
+    fn root() -> TempDir {
+        TempDir::new().unwrap()
     }
 
-    #[fixture]
-    fn file() -> NamedTempFile {
-        NamedTempFile::new().unwrap()
+    fn create_file(always_on: &AlwaysOnFile) {
+        assert!(std::fs::write(always_on.path(), "").is_ok());
     }
 
     #[rstest]
-    fn is_always_on_fails_if_file_doesnt_exist(file: NamedTempFile) {
-        let path = get_path(&file);
-        file.close().unwrap();
+    fn is_always_on_fails_if_file_doesnt_exist(root: TempDir) {
+        let always_on = AlwaysOnFile::new(root.path());
 
-        let always_on = AlwaysOnFile::new(path);
         assert!(!always_on.is_always_on());
     }
 
     #[rstest]
-    fn is_always_on_succeeds_if_file_exists(file: NamedTempFile) {
-        let path = get_path(&file);
+    fn is_always_on_succeeds_if_file_exists(root: TempDir) {
+        let always_on = AlwaysOnFile::new(root.path());
+        create_file(&always_on);
 
-        let always_on = AlwaysOnFile::new(path);
         assert!(always_on.is_always_on());
     }
 
     #[rstest]
-    fn set_always_on_succeeds_if_file_doesnt_exist(file: NamedTempFile) {
-        let path = get_path(&file);
-        file.close().unwrap();
-
-        let always_on = AlwaysOnFile::new(path);
+    fn set_always_on_succeeds_if_file_doesnt_exist(root: TempDir) {
+        let always_on = AlwaysOnFile::new(root.path());
         assert!(always_on.set_always_on().is_ok());
     }
 
     #[rstest]
-    fn set_always_on_succeeds_if_file_exists(file: NamedTempFile) {
-        let path = get_path(&file);
+    fn set_always_on_succeeds_if_file_exists(root: TempDir) {
+        let always_on = AlwaysOnFile::new(root.path());
+        create_file(&always_on);
 
-        let always_on = AlwaysOnFile::new(path);
         assert!(always_on.set_always_on().is_ok());
     }
 
     #[rstest]
-    fn reset_always_on_succeeds_if_file_doesnt_exist(file: NamedTempFile) {
-        let path = get_path(&file);
-        file.close().unwrap();
-
-        let always_on = AlwaysOnFile::new(path);
+    fn reset_always_on_succeeds_if_file_doesnt_exist(root: TempDir) {
+        let always_on = AlwaysOnFile::new(root.path());
         assert!(always_on.reset_always_on().is_ok());
     }
 
     #[rstest]
-    fn reset_always_on_succeeds_if_file_exists(file: NamedTempFile) {
-        let path = get_path(&file);
+    fn reset_always_on_succeeds_if_file_exists(root: TempDir) {
+        let always_on = AlwaysOnFile::new(root.path());
+        create_file(&always_on);
 
-        let always_on = AlwaysOnFile::new(path);
         assert!(always_on.reset_always_on().is_ok());
     }
 }

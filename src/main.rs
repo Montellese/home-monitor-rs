@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -7,6 +8,7 @@ use log::{debug, error, info};
 use simplelog::{LevelFilter, SimpleLogger};
 
 mod configuration;
+mod control;
 mod dom;
 mod monitor;
 mod networking;
@@ -19,86 +21,152 @@ const PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 #[derive(Clap)]
 #[clap(version = clap::crate_version!(), author = clap::crate_authors!())]
 struct Opts {
-    #[clap(short = 'c', long = "config", default_value = configuration::LOCATION)]
+    #[clap(
+        short = 'c',
+        long = "config",
+        value_name = "FILE",
+        default_value = configuration::LOCATION,
+        about = "Path to the JSON configuration file"
+    )]
     config: String,
 
-    #[clap(short = 'd', long = "debug", group = "verbosity")]
+    #[clap(
+        short = 'd',
+        long = "debug",
+        group = "verbosity",
+        about = "Enable debug logging"
+    )]
     debug: bool,
-    #[clap(short = 'v', long = "verbose", group = "verbosity")]
+    #[clap(
+        short = 'v',
+        long = "verbose",
+        conflicts_with = "debug",
+        group = "verbosity",
+        about = "Enable verbose logging"
+    )]
     verbose: bool,
 
-    #[clap(short = 's', long = "shutdown", group = "mode")]
-    shutdown: bool,
-    #[clap(short = 'w', long = "wakeup", group = "mode")]
-    wakeup: bool,
+    #[clap(
+        short = 's',
+        long = "shutdown",
+        multiple_values = true,
+        min_values = 1,
+        value_name = "SERVER",
+        conflicts_with = "wakeup",
+        group = "mode",
+        about = "Shut down the specified server(s)"
+    )]
+    shutdown: Vec<String>,
+    #[clap(
+        short = 'w',
+        long = "wakeup",
+        multiple_values = true,
+        min_values = 1,
+        value_name = "SERVER",
+        conflicts_with = "shutdown",
+        group = "mode",
+        about = "Wake up the specified server(s)"
+    )]
+    wakeup: Vec<String>,
 }
 
-#[allow(clippy::too_many_arguments)]
 fn run(
     args: Opts,
     config: configuration::Configuration,
-    ping_interval: Duration,
-    server: dom::Server,
-    machines: Vec<dom::Machine>,
-    wakeup_server: Arc<dyn networking::WakeupServer>,
-    shutdown_server: Arc<dyn networking::ShutdownServer>,
-    pinger: Box<dyn networking::Pinger>,
-    always_off: Arc<dyn utils::AlwaysOff>,
-    always_on: Arc<dyn utils::AlwaysOn>,
+    configured_servers: HashMap<configuration::DeviceId, configuration::Server>,
+    configured_machines: HashMap<configuration::DeviceId, configuration::Machine>,
 ) -> exitcode::ExitCode {
     // check if a manual option (wakeup / shutdown) has been provided
-    if args.wakeup {
-        info!("waking up {}...", server.machine.name);
-        return match wakeup_server.wakeup() {
-            Err(_) => {
-                error!("failed to wake up {}", server.machine.name);
-                exitcode::UNAVAILABLE
-            }
-            Ok(_) => {
-                info!("{} successfully woken up", server.machine.name);
-                exitcode::OK
-            }
-        };
-    } else if args.shutdown {
-        info!("shutting down {}...", server.machine.name);
-        return match shutdown_server.shutdown() {
-            Err(e) => {
-                error!("failed to shut down {}: {}", server.machine.name, e);
-                exitcode::UNAVAILABLE
-            }
-            Ok(_) => {
-                info!("{} successfully shut down", server.machine.name);
-                exitcode::OK
-            }
-        };
+    if !args.wakeup.is_empty() {
+        // make sure all provided servers are also configured
+        if !args
+            .wakeup
+            .iter()
+            .all(|server_id| configured_servers.contains_key(&server_id.parse().unwrap()))
+        {
+            error!("cannot wake up unconfigured server(s)");
+            return exitcode::USAGE;
+        }
+
+        // wake up all provided servers
+        let mut exitcode = exitcode::OK;
+        for server_id in args.wakeup {
+            let configured_server = configured_servers.get(&server_id.parse().unwrap()).unwrap();
+            let server = dom::Server::from(configured_server);
+
+            info!("waking up {} ({})...", server.machine.name, server_id);
+            let wakeup_server = control::Factory::create_wakeup_server(&server);
+            match wakeup_server.wakeup() {
+                Err(_) => {
+                    error!("failed to wake up {} ({})", server.machine.name, server_id);
+                    exitcode = exitcode::UNAVAILABLE;
+                }
+                Ok(_) => info!(
+                    "{} ({}) successfully woken up",
+                    server.machine.name, server_id
+                ),
+            };
+        }
+        exitcode
+    } else if !args.shutdown.is_empty() {
+        // make sure all provided servers are also configured
+        if !args
+            .shutdown
+            .iter()
+            .all(|server_id| configured_servers.contains_key(&server_id.parse().unwrap()))
+        {
+            error!("cannot shut down unconfigured server(s)");
+            return exitcode::USAGE;
+        }
+
+        // shut down all provided servers
+        let mut exitcode = exitcode::OK;
+        for server_id in args.shutdown {
+            let configured_server = configured_servers.get(&server_id.parse().unwrap()).unwrap();
+            let server = dom::Server::from(configured_server);
+
+            info!("shutting down {} ({})...", server.machine.name, server_id);
+            let shutdown_server = control::Factory::create_shutdown_server(&server);
+            match shutdown_server.shutdown() {
+                Err(e) => {
+                    error!(
+                        "failed to shut down {} ({}): {}",
+                        server.machine.name, server_id, e
+                    );
+                    exitcode = exitcode::UNAVAILABLE;
+                }
+                Ok(_) => info!(
+                    "{} ({}) successfully shut down",
+                    server.machine.name, server_id
+                ),
+            };
+        }
+        exitcode
     } else {
-        process(
-            args,
-            config,
-            ping_interval,
-            server,
-            machines,
-            wakeup_server,
-            shutdown_server,
-            pinger,
-            always_off,
-            always_on,
-        )
+        let ping_interval = Duration::from_secs(config.network.ping.interval);
+
+        // create the server DOM objects from the parsed configuration
+        let servers: Vec<dom::Server> = configured_servers
+            .iter()
+            .map(|(_, server)| dom::Server::from(server))
+            .collect();
+
+        // create the machine DOM objects from the parsed configuration
+        let machines: Vec<dom::Machine> = configured_machines
+            .iter()
+            .map(|(_, machine)| dom::Machine::from(machine))
+            .collect();
+
+        process(args, config, ping_interval, servers, machines)
     }
 }
 
-#[allow(clippy::too_many_arguments)]
 fn process(
     args: Opts,
     config: configuration::Configuration,
     ping_interval: Duration,
-    server: dom::Server,
+    servers: Vec<dom::Server>,
     machines: Vec<dom::Machine>,
-    wakeup_server: Arc<dyn networking::WakeupServer>,
-    shutdown_server: Arc<dyn networking::ShutdownServer>,
-    pinger: Box<dyn networking::Pinger>,
-    always_off: Arc<dyn utils::AlwaysOff>,
-    always_on: Arc<dyn utils::AlwaysOn>,
 ) -> exitcode::ExitCode {
     // create the tokio runtime
     let rt = tokio::runtime::Builder::new_multi_thread()
@@ -118,6 +186,25 @@ fn process(
     // only start the web API (and shared state synchronization) if a valid port is configured
     let provide_web_api = config.api.web.port > 0;
 
+    // prepare the server controls
+    let server_controls: Vec<control::ServerControl> = servers
+        .iter()
+        .map(|server| control::Factory::create_control(server, &config.api.files.root))
+        .collect();
+
+    // get and convert the dependency tree
+    let dependencies = config.dependencies.clone();
+    let dependencies: dom::Dependencies = dependencies
+        .0
+        .iter()
+        .map(|(device_id, deps)| {
+            (
+                dom::DeviceId::from(device_id),
+                deps.iter().map(dom::DeviceId::from).collect(),
+            )
+        })
+        .collect();
+
     // run the main code asynchronously
     info!("monitoring the network for activity...");
     let monitoring = {
@@ -126,21 +213,19 @@ fn process(
         } else {
             dom::communication::create_noop_sender()
         };
-        let always_off = always_off.clone();
-        let always_on = always_on.clone();
-        let wakeup_server = wakeup_server.clone();
-        let shutdown_server = shutdown_server.clone();
+        let server_controls = server_controls.clone();
+        let machines = machines.clone();
+        let dependencies = dependencies.clone();
         rt.spawn(async move {
+            let pinger = control::Factory::create_pinger(None);
+
             let mut monitor = monitor::Monitor::new(
                 sender,
                 ping_interval,
-                server,
+                server_controls,
                 machines,
-                wakeup_server,
-                shutdown_server,
+                dependencies,
                 pinger,
-                always_off,
-                always_on,
             );
 
             let mut interval = tokio::time::interval(Duration::from_secs(1));
@@ -152,10 +237,20 @@ fn process(
         })
     };
 
+    // create a list of all devices
+    let mut devices: Vec<dom::Device> = servers
+        .iter()
+        .map(|server| dom::Device::Server(server.clone()))
+        .collect();
+    devices.extend(
+        machines
+            .iter()
+            .map(|machine| dom::Device::Machine(machine.clone())),
+    );
+
     // create a shared state of machines
-    let shared_state: Arc<dom::communication::SharedStateMutex> = Arc::new(Mutex::new(
-        dom::communication::SharedState::new(config.machines.len() + 1),
-    ));
+    let shared_state: Arc<dom::communication::SharedStateMutex> =
+        Arc::new(Mutex::new(dom::communication::SharedState::new(devices)));
 
     let sync = {
         let shared_state = shared_state.clone();
@@ -190,10 +285,8 @@ fn process(
                 PKG_VERSION,
                 config,
                 shared_state,
-                always_off.clone(),
-                always_on.clone(),
-                wakeup_server.clone(),
-                shutdown_server.clone(),
+                server_controls,
+                dependencies,
             );
 
             debug!("starting the web API...");
@@ -253,7 +346,18 @@ fn main() {
         Ok(r) => r,
     };
 
-    if config.machines.is_empty() {
+    if config.devices.is_empty() {
+        error!("configuration doesn't contain any devices to monitor/control");
+        std::process::exit(exitcode::CONFIG);
+    }
+
+    let configured_servers = configuration::get_servers(&config.devices);
+    if configured_servers.is_empty() {
+        error!("configuration doesn't contain any servers to control");
+        std::process::exit(exitcode::CONFIG);
+    }
+    let configured_machines = configuration::get_machines(&config.devices);
+    if configured_machines.is_empty() {
         error!("configuration doesn't contain any machines to monitor");
         std::process::exit(exitcode::CONFIG);
     }
@@ -261,8 +365,7 @@ fn main() {
     {
         // log the always on / off files
         let files = &config.api.files;
-        info!("always on: {}", files.always_on);
-        info!("always off: {}", files.always_off);
+        info!("files API root directory: {}", files.root.to_str().unwrap());
     }
 
     // log the details of the configured network interface
@@ -281,10 +384,9 @@ fn main() {
         info!("ping: every {}s for {}s", ping.interval, ping.timeout);
     }
 
-    {
-        // log the details of the configured server
-        let server = &config.server;
-        info!("server:");
+    // log the details of the configured servers
+    info!("servers ({}):", configured_servers.len());
+    for (_, server) in configured_servers.iter() {
         info!(
             "  {}@{}: {} [{}] ({}s)",
             server.username,
@@ -295,56 +397,18 @@ fn main() {
         );
     }
 
-    {
-        // log the details of the configured machines
-        let machines = &config.machines;
-        info!("machines ({}):", machines.len());
-        for machine in machines.iter() {
-            info!(
-                "  {}: {} ({}s)",
-                machine.name, machine.ip, machine.last_seen_timeout
-            );
-        }
+    // log the details of the configured machines
+    info!("machines ({}):", configured_machines.len());
+    for (_, machine) in configured_machines.iter() {
+        info!(
+            "  {}: {} ({}s)",
+            machine.name, machine.ip, machine.last_seen_timeout
+        );
     }
 
     info!("");
 
-    let ping_interval = Duration::from_secs(config.network.ping.interval);
-
-    // create the server DOM object from the parsed configuration
-    let server = dom::Server::from(&config.server);
-
-    // create the machine DOM objects from the parsed configuration
-    let mut machines = Vec::new();
-    for machine in config.machines.iter() {
-        machines.push(dom::Machine::from(machine));
-    }
-
-    // instantiate a WakeOnLanServer
-    let wakeup_server = Arc::new(networking::WakeOnLanServer::new(&server));
-
-    // instantiate a Ssh2ShutdownServer
-    let shutdown_server = Arc::new(networking::Ssh2ShutdownServer::new(&server));
-
-    // instantiate the FastPinger
-    let pinger = Box::new(networking::FastPinger::new(None));
-
-    // instantiate an AlwaysOffFile / AlwaysOnFile
-    let always_off = Arc::new(utils::AlwaysOffFile::from(&config.api.files));
-    let always_on = Arc::new(utils::AlwaysOnFile::from(&config.api.files));
-
     // run the monitoring process
-    let result = run(
-        args,
-        config,
-        ping_interval,
-        server,
-        machines,
-        wakeup_server,
-        shutdown_server,
-        pinger,
-        always_off,
-        always_on,
-    );
+    let result = run(args, config, configured_servers, configured_machines);
     std::process::exit(result);
 }

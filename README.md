@@ -6,11 +6,11 @@
     <a href="https://app.travis-ci.com/github/Montellese/home-monitor-rs"><img alt="Travis CI Build Status" src="https://api.travis-ci.org/Montellese/home-monitor-rs.svg?branch=master"></a> <img alt="Rust Code Checks" src="https://github.com/Montellese/home-monitor-rs/actions/workflows/rust-code-checks.yml/badge.svg?branch=master">
 </p>
 
-`home-monitor-rs` is a re-write of [`home-monitor`](https://github.com/Montellese/home-monitor) in [Rust](https://www.rust-lang.org/).
+`home-monitor-rs` is a re-write of [`home-monitor`](https://github.com/Montellese/home-monitor) in [Rust](https://www.rust-lang.org/) with additional features like a web / REST API.
 
-`home-monitor-rs` is a service designed to run on an "always online" device (like a router or a Raspberry Pi) which constantly monitors a configurable list of devices (based on their IP addresses) to see if any of them are online. If all devices are offline a configured server is automatically turned off using SSH. If at least one of the configured devices is online the server is automatically turned on using Wake-on-LAN.
+`home-monitor-rs` is a service designed to run on an "always online" device (like a router or a Raspberry Pi) which constantly monitors a configurable list of devices (based on their IP addresses) to see if any of them are online. Depending on the configured dependencies between servers and machines a server is automatically turned off using SSH if all relevant machines are offline. It at least one of the machines is online the server is automatically turned on using Wake-on-LAN.
 
-In addition to running `home-monitor-rs` as a service it can also be used to manually turn on or shut down the configured server.
+In addition to running `home-monitor-rs` as a service it can also be used to manually turn on or shut down the configured servers.
 
 - [home-monitor-rs](#home-monitor-rs)
   - [How to use](#how-to-use)
@@ -19,17 +19,18 @@ In addition to running `home-monitor-rs` as a service it can also be used to man
     - [Web / REST API](#web--rest-api)
       - [GET /config](#get-config)
       - [GET /status](#get-status)
-      - [GET /always_off](#get-always_off)
-      - [POST /always_off](#post-always_off)
-      - [DELETE /always_off](#delete-always_off)
-      - [GET /always_on](#get-always_on)
-      - [POST /always_on](#post-always_on)
-      - [DELETE /always_on](#delete-always_on)
-      - [PUT /wakeup](#put-wakeup)
-      - [PUT /shutdown](#put-shutdown)
+      - [GET /server/\<server\>/status](#get-serverserverstatus)
+      - [GET /server/\<server\>/always_off](#get-serverserveralways_off)
+      - [POST /server/\<server\>/always_off](#post-serverserveralways_off)
+      - [DELETE /server/\<server\>/always_off](#delete-serverserveralways_off)
+      - [GET /server/\<server\>/always_on](#get-serverserveralways_on)
+      - [POST /server/\<server\>/always_on](#post-serverserveralways_on)
+      - [DELETE /server/\<server\>/always_on](#delete-serverserveralways_on)
+      - [PUT /server/\<server\>/wakeup](#put-serverserverwakeup)
+      - [PUT /server/\<server\>/shutdown](#put-serverservershutdown)
     - [Command Line Tool](#command-line-tool)
-      - [Turn server on](#turn-server-on)
-      - [Shut server down](#shut-server-down)
+      - [Turn server(s) on](#turn-servers-on)
+      - [Shut server(s) down](#shut-servers-down)
   - [How to develop](#how-to-develop)
     - [Requirements](#requirements)
     - [Build](#build)
@@ -52,7 +53,9 @@ FLAGS:
     -w, --wakeup      
 
 OPTIONS:
-    -c, --config <config>    [default: /etc/home-monitor/home-monitor.json]
+    -c, --config <FILE>           Path to the JSON configuration file [default: /etc/home-monitor/home-monitor.json]
+    -s, --shutdown <SERVER>...    Shut down the specified server(s)
+    -w, --wakeup <SERVER>...      Wake up the specified server(s)
 ```
 
 ### Configuration
@@ -70,35 +73,43 @@ OPTIONS:
     },
     "api": {
         "files": {
-            "alwaysOff": "/etc/home-monitor/alwaysoff",
-            "alwaysOn": "/etc/home-monitor/alwayson"
+            "root": "/etc/home-monitor/"
         },
         "web": {
             "ip": "127.0.0.1",
             "port": 8000
         }
     },
-    "server": {
-        "name": "My Server",
-        "mac": "aa:bb:cc:dd:ee:ff",
-        "ip": "192.168.1.255",
-        "username": "foo",
-        "password": "bar",
-        "timeout": 60
-    },
-    "machines": [
-        {
+    "devices": {
+        "myserver": {
+            "name": "My Server",
+            "mac": "aa:bb:cc:dd:ee:ff",
+            "ip": "192.168.1.255",
+            "username": "foo",
+            "password": "bar",
+            "timeout": 60
+        },
+        "mymachine": {
             "name": "My Machine",
             "ip": "192.168.1.254",
             "timeout": 300
         }
-    ]
+    },
+    "dependencies": {
+        "myserver": {
+            "mymachine"
+        }
+    }
 }
 ```
 
-The `machines` array can contain as many "machines" as necessary. Every configured machine will be monitored to determine the expected status of the configured `server`.
+The `devices` object can contain as many "devices" as necessary and is a combination of "servers" and "machines". Every configured device will be monitored to determine the expected status of the server depending on the device to be online (through the `dependencies` object). A server can also depend on one or more other servers.
 
-The `alwaysOff` file configuration option specifies a file which - if present - forces `home-monitor-rs` to turn the configured `server` off independent of the status of the configured `machines`. Similarly the `alwaysOn` file configuration option specifies a file which - if present - forces `home-monitor-rs` to turn the configured `server` on independent of the status of the configured `machines`.
+Any device which should be controlled by `home-monitor-rs` must be configured with a `mac`, `username` and `password` whereas machines which are just monitored don't need these properties.
+
+The `files.root` configuration option in the `api` section specifies the root directory for the file based API. `home-monitor-rs` automatically creates a new sub-directory in the `root` directory for every server to be controlled. Within that subdirectory two files can be created:
+* if the `alwaysoff` file is present it forces `home-monitor-rs` to shut the configured server down independent of the status of the machines.
+* if the `alwayson` file is present it forces `home-monitor-rs` to turn the configured server on independent of the status of the configured machines.
 
 The `web` configuration in the `api` section can be used to configure an optional web / REST API. If the `web` section is completely missing of the `port` option is `0` the web / REST API is not started. If `ip` contains a valid IP address and `port` a valid HTTP port the web / REST API is automatically started.
 
@@ -130,68 +141,72 @@ sudo systemctl [status|start|stop|restart|enable|disable] home-monitor-rs
 
 #### GET /config
 
-This REST endpoints returns the currently used / loaded configuration in JSON format.
+This REST endpoint returns the currently used / loaded configuration in JSON format.
 
 #### GET /status
 
-This REST endpoint returns the current status of the monitored server and machines in JSON format.
+This REST endpoint returns the current status of the configured devices in JSON format.
 
-#### GET /always_off
+#### GET /server/\<server\>/status
 
-This REST endpoints returns the current status of the `alwaysOff` feature in the following JSON format:
+This REST endpoint returns the current status of the given server and the machines it depends on in JSON format.
+
+#### GET /server/\<server\>/always_off
+
+This REST endpoint returns the current status of the `alwaysoff` feature for the given server in the following JSON format:
 ```json
 { "always_off": true }
 ```
 
-#### POST /always_off
+#### POST /server/\<server\>/always_off
 
-This REST endpoint activates the `alwaysOff` feature (independent of whether it was already active or not) and returns the new status in the JSON format described in [GET /always_off](#get-always_off).
+This REST endpoint activates the `alwaysoff` feature (independent of whether it was already active or not) for the given server and returns the new status in the JSON format described in [GET /server/\<server\>/always_off](#get-serverserveralways_off).
 
-#### DELETE /always_off
+#### DELETE /server/\<server\>/always_off
 
-This REST endpoint deactivates the `alwaysOff` feature (independent of whether it was already inactive or not) and returns the new status in the JSON format described in [GET /always_off](#get-always_off).
+This REST endpoint deactivates the `alwaysoff` feature (independent of whether it was already inactive or not) for the given server and returns the new status in the JSON format described in [GET /server/\<server\>/always_off](#get-serverserveralways_off).
 
-#### GET /always_on
+#### GET /server/\<server\>/always_on
 
-This REST endpoints returns the current status of the `alwaysOn` feature in the following JSON format:
+This REST endpoint returns the current status of the `alwayson` feature for the given server in the following JSON format:
 ```json
 { "always_on": true }
 ```
 
-#### POST /always_on
+#### POST /server/\<server\>/always_on
 
-This REST endpoint activates the `alwaysOn` feature (independent of whether it was already active or not) and returns the new status in the JSON format described in [GET /always_on](#get-always_on).
+This REST endpoint activates the `alwayson` feature (independent of whether it was already active or not) for the given server and returns the new status in the JSON format described in [GET /server/\<server\>/always_on](#get-serverserveralways_on).
 
-#### DELETE /always_on
+#### DELETE /server/\<server\>/always_on
 
-This REST endpoint deactivates the `alwaysOn` feature (independent of whether it was already inactive or not) and returns the new status in the JSON format described in [GET /always_on](#get-always_on).
+This REST endpoint deactivates the `alwayson` feature (independent of whether it was already inactive or not) for the given server and returns the new status in the JSON format described in [GET /server/\<server\>/always_on](#get-serverserveralways_on).
 
-#### PUT /wakeup
+#### PUT /server/\<server\>/wakeup
 
-This REST endpoint forces `home-monitor-rs` to wake up the configured server independent of its current status or the status of the monitored machines. This is the same functionality as provided by the [Command Line Tool](#command-line-tool).
+This REST endpoint forces `home-monitor-rs` to wake up the given server independent of its current status or the status of the monitored machines. This is the same functionality as provided by the [Command Line Tool](#command-line-tool).
 
-#### PUT /shutdown
+#### PUT /server/\<server\>/shutdown
 
-This REST endpoint forces `home-monitor-rs` to shut down the configured server independent of its current status or the status of the monitored machines. This is the same functionality as provided by the [Command Line Tool](#command-line-tool).
+This REST endpoint forces `home-monitor-rs` to shut down the given server independent of its current status or the status of the monitored machines. This is the same functionality as provided by the [Command Line Tool](#command-line-tool).
 
 ### Command Line Tool
 
 `home-monitor-rs` can also be used as a command line (CLI) tool to turn on or shut down the configured server.
 
-#### Turn server on
+#### Turn server(s) on
 
-To turn on the configured server use
-
-```
-home-monitor-rs --wakeup [-c <path to JSON configuration file>]
-```
-
-#### Shut server down
-
-To shut the configured server down use
+To turn on one or more configured servers use
 
 ```
-home-monitor-rs --shutdown [-c <path to JSON configuration file>]
+home-monitor-rs --wakeup myserver [-c <path to JSON configuration file>]
+```
+
+#### Shut server(s) down
+
+To shut one or more configured servers down use
+
+```
+home-monitor-rs --shutdown myserver [-c <path to JSON configuration file>]
 ```
 
 ## How to develop

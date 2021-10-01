@@ -5,14 +5,12 @@ pub struct SharedState {
 }
 
 impl SharedState {
-    pub fn new(capacity: usize) -> Self {
-        Self {
-            devices: Vec::with_capacity(capacity),
-        }
+    pub fn new(devices: Vec<Device>) -> Self {
+        Self { devices }
     }
 
-    pub fn get_devices(&self) -> Vec<Device> {
-        self.devices.clone()
+    pub fn get_devices(&self) -> &Vec<Device> {
+        &self.devices
     }
 
     pub fn update_device(&mut self, device: Device) {
