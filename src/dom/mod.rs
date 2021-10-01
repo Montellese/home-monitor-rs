@@ -1,4 +1,4 @@
 pub mod communication;
-mod machine;
+mod device;
 
-pub use machine::{Machine, Server};
+pub use device::{Machine, Server};

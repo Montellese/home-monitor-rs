@@ -6,14 +6,14 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 
 mod api;
+mod device;
 mod files;
-mod machine;
 mod network;
 mod web;
 
 pub use api::Api;
+pub use device::{Machine, Server};
 pub use files::Files;
-pub use machine::{Machine, Server};
 pub use network::{Network, Ping};
 pub use web::Web;
 
@@ -24,8 +24,8 @@ pub const LOCATION: &str = "/etc/home-monitor/home-monitor.json";
 pub struct Configuration {
     pub api: api::Api,
     pub network: network::Network,
-    pub server: machine::Server,
-    pub machines: Vec<machine::Machine>,
+    pub server: device::Server,
+    pub machines: Vec<device::Machine>,
 }
 
 #[allow(dead_code)]
