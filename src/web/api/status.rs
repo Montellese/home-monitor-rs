@@ -1,4 +1,5 @@
 use std::convert::From;
+use std::net::IpAddr;
 use std::option::Option;
 use std::sync::Arc;
 
@@ -15,7 +16,7 @@ use crate::dom::communication::SharedStateMutex;
 #[serde(rename_all = "camelCase")]
 pub struct Device {
     pub name: String,
-    pub ip: String,
+    pub ip: IpAddr,
     #[serde(default)]
     #[serde(skip_serializing_if = "String::is_empty")]
     pub mac: String,
@@ -35,7 +36,7 @@ impl From<&dom::Machine> for Device {
     fn from(machine: &dom::Machine) -> Self {
         Self {
             name: machine.name.clone(),
-            ip: machine.ip.clone(),
+            ip: machine.ip,
             mac: String::new(),
             last_seen_timeout: machine.last_seen_timeout,
             is_online: machine.is_online,

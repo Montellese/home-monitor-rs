@@ -48,7 +48,7 @@ impl Monitor {
         let mut mut_pinger = pinger;
 
         // add the IP address of the server to the pinger
-        match mut_pinger.add_target(&server.machine.ip) {
+        match mut_pinger.add_target(server.machine.ip) {
             Ok(false) => {
                 panic!("failed to add {} to the pinger", server)
             }
@@ -62,7 +62,7 @@ impl Monitor {
 
         // add the IP address of all machines to the pinger
         mut_machines.retain(|machine: &Machine| {
-            return match mut_pinger.add_target(&machine.ip) {
+            return match mut_pinger.add_target(machine.ip) {
                 Ok(true) => true,
                 Ok(false) => {
                     warn!("failed to add {} to the pinger", machine);
@@ -256,6 +256,7 @@ impl Monitor {
 #[cfg(test)]
 mod tests {
     use std::convert::TryInto;
+    use std::net::IpAddr;
     use std::ops::Add;
     use std::sync::mpsc::RecvError;
 
@@ -289,10 +290,15 @@ mod tests {
     }
 
     #[fixture]
+    fn server_ip() -> IpAddr {
+        SERVER_IP.parse().unwrap()
+    }
+
+    #[fixture]
     fn server() -> Server {
         Server::new(
             SERVER_NAME,
-            SERVER_IP,
+            server_ip(),
             SERVER_LAST_SEEN_TIMEOUT,
             SERVER_MAC,
             SERVER_USERNAME,
@@ -301,8 +307,13 @@ mod tests {
     }
 
     #[fixture]
+    fn machine_ip() -> IpAddr {
+        MACHINE_IP.parse().unwrap()
+    }
+
+    #[fixture]
     fn machine() -> Machine {
-        Machine::new(MACHINE_NAME, MACHINE_IP, MACHINE_LAST_SEEN_TIMEOUT)
+        Machine::new(MACHINE_NAME, machine_ip(), MACHINE_LAST_SEEN_TIMEOUT)
     }
 
     fn default_mocks() -> (
@@ -324,50 +335,9 @@ mod tests {
     }
 
     #[rstest]
-    #[should_panic(expected = "failed to add")]
-    #[allow(unused_variables)]
-    fn test_monitor_fails_if_server_has_no_ip(fake_clock: (), machine: Machine) {
-        // SETUP
-        let (sender, wakeup_server, shutdown_server, mut pinger, always_off, always_on) =
-            default_mocks();
-
-        let server = Server::new(
-            SERVER_NAME,
-            "",
-            SERVER_LAST_SEEN_TIMEOUT,
-            SERVER_MAC,
-            SERVER_USERNAME,
-            SERVER_PASSWORD,
-        );
-        let machines = vec![machine];
-
-        // EXPECTATIONS
-        // we SHOULD return Err(AddrParseError(())) but it can't be created :-(
-        pinger
-            .expect_add_target()
-            .with(eq(""))
-            .once()
-            .returning(|_| Ok(false));
-
-        // TESTING
-        #[allow(unused_variables)]
-        let monitor = Monitor::new(
-            sender,
-            PING_INTERVAL,
-            server,
-            machines,
-            Arc::new(wakeup_server),
-            Arc::new(shutdown_server),
-            pinger,
-            Arc::new(always_off),
-            Arc::new(always_on),
-        );
-    }
-
-    #[rstest]
     #[should_panic(expected = "no machines to monitor")]
     #[allow(unused_variables)]
-    fn test_monitor_fails_without_machines(fake_clock: (), server: Server) {
+    fn test_monitor_fails_without_machines(fake_clock: (), server_ip: IpAddr, server: Server) {
         // SETUP
         let (sender, wakeup_server, shutdown_server, mut pinger, always_off, always_on) =
             default_mocks();
@@ -377,7 +347,7 @@ mod tests {
         // EXPECTATIONS
         pinger
             .expect_add_target()
-            .with(eq(SERVER_IP))
+            .with(eq(server_ip))
             .once()
             .returning(|_| Ok(true));
 
@@ -398,33 +368,39 @@ mod tests {
 
     #[rstest]
     #[allow(unused_variables)]
-    fn test_monitor_ignore_duplicate_machine_ips(fake_clock: (), server: Server, machine: Machine) {
+    fn test_monitor_ignore_duplicate_machine_ips(
+        fake_clock: (),
+        server_ip: IpAddr,
+        server: Server,
+        machine_ip: IpAddr,
+        machine: Machine,
+    ) {
         // SETUP
         let (mut sender, wakeup_server, shutdown_server, mut pinger, always_off, always_on) =
             default_mocks();
 
         let machines = vec![
             machine,
-            Machine::new("Test Machine 2", MACHINE_IP, MACHINE_LAST_SEEN_TIMEOUT),
+            Machine::new("Test Machine 2", machine_ip, MACHINE_LAST_SEEN_TIMEOUT),
         ];
 
         // EXPECTATIONS
         let mut seq = Sequence::new();
         pinger
             .expect_add_target()
-            .with(eq(SERVER_IP))
+            .with(eq(server_ip))
             .once()
             .return_once(|_| Ok(true))
             .in_sequence(&mut seq);
         pinger
             .expect_add_target()
-            .with(eq(MACHINE_IP))
+            .with(eq(machine_ip))
             .once()
             .return_once(|_| Ok(true))
             .in_sequence(&mut seq);
         pinger
             .expect_add_target()
-            .with(eq(MACHINE_IP))
+            .with(eq(machine_ip))
             .once()
             .return_once(|_| Ok(false))
             .in_sequence(&mut seq);
@@ -497,7 +473,13 @@ mod tests {
 
     #[rstest]
     #[allow(unused_variables)]
-    fn test_monitor_ignore_if_always_off_and_on(fake_clock: (), server: Server, machine: Machine) {
+    fn test_monitor_ignore_if_always_off_and_on(
+        fake_clock: (),
+        server_ip: IpAddr,
+        server: Server,
+        machine_ip: IpAddr,
+        machine: Machine,
+    ) {
         // SETUP
         let (
             mut sender,
@@ -544,7 +526,9 @@ mod tests {
     #[allow(unused_variables)]
     fn test_monitor_shutdown_server_if_always_off(
         fake_clock: (),
+        server_ip: IpAddr,
         server: Server,
+        machine_ip: IpAddr,
         machine: Machine,
     ) {
         // SETUP
@@ -584,7 +568,7 @@ mod tests {
                 .in_sequence(&mut seq);
             pinger
                 .expect_is_online()
-                .with(eq(SERVER_IP))
+                .with(eq(server_ip))
                 .once()
                 .return_once(|_| true)
                 .in_sequence(&mut seq);
@@ -595,7 +579,7 @@ mod tests {
                 .in_sequence(&mut seq);
             pinger
                 .expect_is_online()
-                .with(eq(MACHINE_IP))
+                .with(eq(machine_ip))
                 .once()
                 .return_once(|_| true)
                 .in_sequence(&mut seq);
@@ -633,7 +617,13 @@ mod tests {
 
     #[rstest]
     #[allow(unused_variables)]
-    fn test_monitor_wakeup_server_if_always_on(fake_clock: (), server: Server, machine: Machine) {
+    fn test_monitor_wakeup_server_if_always_on(
+        fake_clock: (),
+        server_ip: IpAddr,
+        server: Server,
+        machine_ip: IpAddr,
+        machine: Machine,
+    ) {
         // SETUP
         let (
             mut sender,
@@ -679,7 +669,9 @@ mod tests {
     #[allow(unused_variables)]
     fn test_monitor_ping_once_if_interval_elapsed(
         fake_clock: (),
+        server_ip: IpAddr,
         server: Server,
+        machine_ip: IpAddr,
         machine: Machine,
     ) {
         // SETUP
@@ -711,13 +703,13 @@ mod tests {
             .in_sequence(&mut seq);
         pinger
             .expect_is_online()
-            .with(eq(SERVER_IP))
+            .with(eq(server_ip))
             .once()
             .return_once(|_| false)
             .in_sequence(&mut seq);
         pinger
             .expect_is_online()
-            .with(eq(MACHINE_IP))
+            .with(eq(machine_ip))
             .once()
             .return_once(|_| false)
             .in_sequence(&mut seq);
@@ -745,7 +737,13 @@ mod tests {
     #[rstest]
     #[should_panic(expected = "Pinger failed to receive responses")]
     #[allow(unused_variables)]
-    fn test_monitor_fails_if_recv_pong_fails(fake_clock: (), server: Server, machine: Machine) {
+    fn test_monitor_fails_if_recv_pong_fails(
+        fake_clock: (),
+        server_ip: IpAddr,
+        server: Server,
+        machine_ip: IpAddr,
+        machine: Machine,
+    ) {
         // SETUP
         let (mut sender, wakeup_server, shutdown_server, mut pinger, mut always_off, mut always_on) =
             default_mocks();
@@ -798,7 +796,9 @@ mod tests {
     #[allow(unused_variables)]
     fn test_monitor_wakeup_server_if_at_least_one_machine_is_online(
         fake_clock: (),
+        server_ip: IpAddr,
         server: Server,
+        machine_ip: IpAddr,
         machine: Machine,
     ) {
         // SETUP
@@ -836,13 +836,13 @@ mod tests {
             .in_sequence(&mut seq);
         pinger
             .expect_is_online()
-            .with(eq(SERVER_IP))
+            .with(eq(server_ip))
             .once()
             .return_once(|_| false)
             .in_sequence(&mut seq);
         pinger
             .expect_is_online()
-            .with(eq(MACHINE_IP))
+            .with(eq(machine_ip))
             .once()
             .return_once(|_| true)
             .in_sequence(&mut seq);
@@ -878,7 +878,9 @@ mod tests {
     #[allow(unused_variables)]
     fn test_monitor_only_wakeup_server_again_if_change_timeout_expired(
         fake_clock: (),
+        server_ip: IpAddr,
         server: Server,
+        machine_ip: IpAddr,
         machine: Machine,
     ) {
         // SETUP
@@ -904,11 +906,11 @@ mod tests {
         pinger.expect_recv_pong().returning(|| Ok(()));
         pinger
             .expect_is_online()
-            .with(eq(SERVER_IP))
+            .with(eq(server_ip))
             .returning(|_| false);
         pinger
             .expect_is_online()
-            .with(eq(MACHINE_IP))
+            .with(eq(machine_ip))
             .returning(|_| true);
         sender.expect_send().once().return_once(|_| Ok(()));
 
@@ -950,7 +952,9 @@ mod tests {
     #[allow(unused_variables)]
     fn test_monitor_shutdown_server_if_no_machine_is_online(
         fake_clock: (),
+        server_ip: IpAddr,
         server: Server,
+        machine_ip: IpAddr,
         machine: Machine,
     ) {
         // SETUP
@@ -979,12 +983,12 @@ mod tests {
         pinger.expect_recv_pong().returning(|| Ok(()));
         pinger
             .expect_is_online()
-            .with(eq(SERVER_IP))
+            .with(eq(server_ip))
             .returning(|_| true);
         sender.expect_send().once().return_once(|_| Ok(()));
         pinger
             .expect_is_online()
-            .with(eq(MACHINE_IP))
+            .with(eq(machine_ip))
             .returning(|_| false);
 
         shutdown_server
@@ -1016,7 +1020,9 @@ mod tests {
     #[allow(unused_variables)]
     fn test_monitor_only_shutdown_server_after_wakeup_if_change_timeout_expired(
         fake_clock: (),
+        server_ip: IpAddr,
         server: Server,
+        machine_ip: IpAddr,
         machine: Machine,
     ) {
         // SETUP
@@ -1060,13 +1066,13 @@ mod tests {
             .in_sequence(&mut seq);
         pinger
             .expect_is_online()
-            .with(eq(SERVER_IP))
+            .with(eq(server_ip))
             .once()
             .return_once(|_| false)
             .in_sequence(&mut seq);
         pinger
             .expect_is_online()
-            .with(eq(MACHINE_IP))
+            .with(eq(machine_ip))
             .once()
             .return_once(|_| true)
             .in_sequence(&mut seq);
@@ -1104,7 +1110,7 @@ mod tests {
             .in_sequence(&mut seq);
         pinger
             .expect_is_online()
-            .with(eq(SERVER_IP))
+            .with(eq(server_ip))
             .once()
             .return_once(|_| true)
             .in_sequence(&mut seq);
@@ -1115,7 +1121,7 @@ mod tests {
             .in_sequence(&mut seq);
         pinger
             .expect_is_online()
-            .with(eq(MACHINE_IP))
+            .with(eq(machine_ip))
             .once()
             .return_once(|_| false)
             .in_sequence(&mut seq);
@@ -1143,13 +1149,13 @@ mod tests {
             .in_sequence(&mut seq);
         pinger
             .expect_is_online()
-            .with(eq(SERVER_IP))
+            .with(eq(server_ip))
             .once()
             .return_once(|_| true)
             .in_sequence(&mut seq);
         pinger
             .expect_is_online()
-            .with(eq(MACHINE_IP))
+            .with(eq(machine_ip))
             .once()
             .return_once(|_| false)
             .in_sequence(&mut seq);
@@ -1204,7 +1210,9 @@ mod tests {
     #[allow(unused_variables)]
     fn test_monitor_dont_wakeup_server_if_always_off(
         fake_clock: (),
+        server_ip: IpAddr,
         server: Server,
+        machine_ip: IpAddr,
         machine: Machine,
     ) {
         // SETUP
@@ -1231,11 +1239,11 @@ mod tests {
         pinger.expect_recv_pong().returning(|| Ok(()));
         pinger
             .expect_is_online()
-            .with(eq(SERVER_IP))
+            .with(eq(server_ip))
             .returning(|_| false);
         pinger
             .expect_is_online()
-            .with(eq(MACHINE_IP))
+            .with(eq(machine_ip))
             .returning(|_| true);
         sender.expect_send().once().return_once(|_| Ok(()));
 
@@ -1265,7 +1273,9 @@ mod tests {
     #[allow(unused_variables)]
     fn test_monitor_dont_shutdown_server_if_always_on(
         fake_clock: (),
+        server_ip: IpAddr,
         server: Server,
+        machine_ip: IpAddr,
         machine: Machine,
     ) {
         // SETUP
@@ -1292,12 +1302,12 @@ mod tests {
         pinger.expect_recv_pong().returning(|| Ok(()));
         pinger
             .expect_is_online()
-            .with(eq(SERVER_IP))
+            .with(eq(server_ip))
             .returning(|_| true);
         sender.expect_send().once().return_once(|_| Ok(()));
         pinger
             .expect_is_online()
-            .with(eq(MACHINE_IP))
+            .with(eq(machine_ip))
             .returning(|_| false);
 
         shutdown_server.expect_shutdown().never();

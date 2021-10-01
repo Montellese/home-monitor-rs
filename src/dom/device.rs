@@ -1,5 +1,6 @@
 use std::convert::From;
 use std::fmt;
+use std::net::IpAddr;
 
 use chrono::{offset, DateTime, Utc};
 
@@ -9,7 +10,7 @@ use super::super::utils::Instant;
 #[derive(Clone, Debug)]
 pub struct Machine {
     pub name: String,
-    pub ip: String,
+    pub ip: IpAddr,
 
     pub last_seen_timeout: u64,
     pub is_online: bool,
@@ -19,10 +20,10 @@ pub struct Machine {
 
 impl Machine {
     #[allow(dead_code)]
-    pub fn new(name: &str, ip: &str, last_seen_timeout: u64) -> Self {
+    pub fn new(name: &str, ip: IpAddr, last_seen_timeout: u64) -> Self {
         Self {
             name: name.to_string(),
-            ip: ip.to_string(),
+            ip,
             last_seen_timeout,
             is_online: false,
             last_seen: None,
@@ -41,7 +42,7 @@ impl Machine {
 
 impl From<&configuration::Machine> for Machine {
     fn from(machine: &configuration::Machine) -> Self {
-        Self::new(&machine.name, &machine.ip, machine.last_seen_timeout)
+        Self::new(&machine.name, machine.ip, machine.last_seen_timeout)
     }
 }
 
@@ -76,7 +77,7 @@ impl Server {
     #[allow(dead_code)]
     pub fn new(
         name: &str,
-        ip: &str,
+        ip: IpAddr,
         last_seen_timeout: u64,
         mac: &str,
         username: &str,

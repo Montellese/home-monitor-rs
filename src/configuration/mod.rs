@@ -19,7 +19,7 @@ pub use web::Web;
 
 pub const LOCATION: &str = "/etc/home-monitor/home-monitor.json";
 
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Configuration {
     pub api: api::Api,
