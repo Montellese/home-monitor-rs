@@ -1,5 +1,4 @@
-use super::super::{Machine, Server};
-use super::Device;
+use super::super::{Device, Machine, Server};
 
 pub struct SharedState {
     devices: Vec<Device>,

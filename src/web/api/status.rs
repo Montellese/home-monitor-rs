@@ -9,7 +9,6 @@ use serde::Serialize;
 
 use super::result;
 use crate::dom;
-use crate::dom::communication;
 use crate::dom::communication::SharedStateMutex;
 
 #[derive(Debug, Serialize)]
@@ -60,17 +59,17 @@ impl From<&dom::Server> for Device {
     }
 }
 
-impl From<communication::Device> for Device {
-    fn from(device: communication::Device) -> Self {
+impl From<dom::Device> for Device {
+    fn from(device: dom::Device) -> Self {
         Device::from(&device)
     }
 }
 
-impl From<&communication::Device> for Device {
-    fn from(device: &communication::Device) -> Self {
+impl From<&dom::Device> for Device {
+    fn from(device: &dom::Device) -> Self {
         match device {
-            communication::Device::Server(server) => Device::from(server),
-            communication::Device::Machine(machine) => Device::from(machine),
+            dom::Device::Server(server) => Device::from(server),
+            dom::Device::Machine(machine) => Device::from(machine),
         }
     }
 }
@@ -98,7 +97,7 @@ pub fn get_status(state: &rocket::State<Arc<SharedStateMutex>>) -> result::Resul
 
     for device in devices {
         match device {
-            communication::Device::Server(server) => match status_server {
+            dom::Device::Server(server) => match status_server {
                 Some(ref device) => {
                     error!(
                         "received a status for more than one server: {:?} != {:?}",
@@ -110,7 +109,7 @@ pub fn get_status(state: &rocket::State<Arc<SharedStateMutex>>) -> result::Resul
                     status_server = Some(Device::from(server));
                 }
             },
-            communication::Device::Machine(machine) => status_machines.push(Device::from(machine)),
+            dom::Device::Machine(machine) => status_machines.push(Device::from(machine)),
         }
     }
 

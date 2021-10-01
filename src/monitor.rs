@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use log::{debug, error, info, trace, warn};
 
-use super::dom::{communication, Machine, Server};
+use super::dom::{communication, Device, Machine, Server};
 use super::networking::{Pinger, ShutdownServer, WakeupServer};
 use super::utils::{AlwaysOff, AlwaysOn, Instant};
 
@@ -82,9 +82,9 @@ impl Monitor {
         );
 
         // send the initial state of the server and all machines
-        Self::publish_machine_update(&*sender, communication::Device::Server(server.clone()));
+        Self::publish_machine_update(&*sender, Device::Server(server.clone()));
         for machine in mut_machines.iter() {
-            Self::publish_machine_update(&*sender, communication::Device::Machine(machine.clone()));
+            Self::publish_machine_update(&*sender, Device::Machine(machine.clone()));
         }
 
         let now = Instant::now();
@@ -160,7 +160,7 @@ impl Monitor {
                 if Self::update_machine_online(&mut self.server.machine, server_is_online) {
                     Self::publish_machine_update(
                         &*self.sender,
-                        communication::Device::Server(self.server.clone()),
+                        Device::Server(self.server.clone()),
                     );
                 }
             }
@@ -169,10 +169,7 @@ impl Monitor {
             for machine in self.machines.iter_mut() {
                 let is_online = self.pinger.is_online(&machine.ip);
                 if Self::update_machine_online(machine, is_online) {
-                    Self::publish_machine_update(
-                        &*self.sender,
-                        communication::Device::Machine(machine.clone()),
-                    );
+                    Self::publish_machine_update(&*self.sender, Device::Machine(machine.clone()));
                 }
             }
         }
@@ -248,7 +245,7 @@ impl Monitor {
         false
     }
 
-    fn publish_machine_update(sender: &dyn communication::Sender, device: communication::Device) {
+    fn publish_machine_update(sender: &dyn communication::Sender, device: Device) {
         debug!("publishing update for {}", device);
         if let Err(e) = sender.send(device.clone()) {
             warn!("failed to publish update for {}: {}", device, e);
