@@ -12,6 +12,7 @@ clap = "3.0.0-beta.1"
 exitcode = "1.1.2"
 fastping-rs = "0.2.3"
 log = "0.4.14"
+macaddr = { version = "1.0", features = ["serde_std"] }
 pnet = "0.27.2"
 rocket = { version = "0.5.0-rc.1", features = ["json"] }
 serde = { version = "1.0.123", features = ["derive"] }
