@@ -2,6 +2,8 @@ use std::net::IpAddr;
 
 use serde::{Deserialize, Serialize};
 
+use super::super::utils::MacAddr;
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Machine {
@@ -18,7 +20,7 @@ pub struct Server {
     #[serde(flatten)]
     pub machine: Machine,
 
-    pub mac: String,
+    pub mac: MacAddr,
     pub username: String,
     pub password: String,
 }

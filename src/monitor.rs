@@ -265,6 +265,7 @@ mod tests {
     use rstest::*;
 
     use super::*;
+    use crate::utils::MacAddr;
 
     static PING_INTERVAL: Duration = Duration::from_secs(1);
 
@@ -295,12 +296,17 @@ mod tests {
     }
 
     #[fixture]
+    fn server_mac() -> MacAddr {
+        MacAddr::V6(SERVER_MAC.parse().unwrap())
+    }
+
+    #[fixture]
     fn server() -> Server {
         Server::new(
             SERVER_NAME,
             server_ip(),
             SERVER_LAST_SEEN_TIMEOUT,
-            SERVER_MAC,
+            server_mac(),
             SERVER_USERNAME,
             SERVER_PASSWORD,
         )

@@ -5,7 +5,7 @@ use std::net::IpAddr;
 use chrono::{offset, DateTime, Utc};
 
 use super::super::configuration;
-use super::super::utils::Instant;
+use super::super::utils::{Instant, MacAddr};
 
 #[derive(Clone, Debug)]
 pub struct Machine {
@@ -68,7 +68,7 @@ impl fmt::Display for Machine {
 pub struct Server {
     pub machine: Machine,
 
-    pub mac: String,
+    pub mac: MacAddr,
     pub username: String,
     pub password: String,
 }
@@ -79,13 +79,13 @@ impl Server {
         name: &str,
         ip: IpAddr,
         last_seen_timeout: u64,
-        mac: &str,
+        mac: MacAddr,
         username: &str,
         password: &str,
     ) -> Self {
         Self {
             machine: Machine::new(name, ip, last_seen_timeout),
-            mac: mac.to_string(),
+            mac,
             username: username.to_string(),
             password: password.to_string(),
         }
@@ -96,7 +96,7 @@ impl From<&configuration::Server> for Server {
     fn from(server: &configuration::Server) -> Self {
         Self {
             machine: Machine::from(&server.machine),
-            mac: server.mac.clone(),
+            mac: server.mac,
             username: server.username.clone(),
             password: server.password.clone(),
         }
@@ -117,9 +117,9 @@ pub enum Device {
 
 impl fmt::Display for Device {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            Device::Server(ref server) => write!(f, "{}", server),
-            Device::Machine(ref machine) => write!(f, "{}", machine),
+        match self {
+            Device::Server(server) => fmt::Display::fmt(server, f),
+            Device::Machine(machine) => fmt::Display::fmt(machine, f),
         }
     }
 }

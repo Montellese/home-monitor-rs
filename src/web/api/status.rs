@@ -5,12 +5,14 @@ use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
 use log::error;
+use macaddr::MacAddr8;
 use rocket::serde::json::Json;
 use serde::Serialize;
 
 use super::result;
 use crate::dom;
 use crate::dom::communication::SharedStateMutex;
+use crate::utils::MacAddr;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -18,8 +20,8 @@ pub struct Device {
     pub name: String,
     pub ip: IpAddr,
     #[serde(default)]
-    #[serde(skip_serializing_if = "String::is_empty")]
-    pub mac: String,
+    #[serde(skip_serializing_if = "MacAddr::is_nil")]
+    pub mac: MacAddr,
 
     pub last_seen_timeout: u64,
     pub is_online: bool,
@@ -37,7 +39,7 @@ impl From<&dom::Machine> for Device {
         Self {
             name: machine.name.clone(),
             ip: machine.ip,
-            mac: String::new(),
+            mac: MacAddr::V8(MacAddr8::nil()),
             last_seen_timeout: machine.last_seen_timeout,
             is_online: machine.is_online,
             last_seen: machine.last_seen_date,
@@ -54,7 +56,7 @@ impl From<dom::Server> for Device {
 impl From<&dom::Server> for Device {
     fn from(server: &dom::Server) -> Self {
         let mut device = Device::from(&server.machine);
-        device.mac = server.mac.clone();
+        device.mac = server.mac;
 
         device
     }
