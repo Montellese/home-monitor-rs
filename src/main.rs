@@ -115,10 +115,17 @@ fn process(
     // prepare a channel to communicate updates from monitoring to the web API
     let (tx, rx) = dom::communication::mpsc_channel();
 
+    // only start the web API (and shared state synchronization) if a valid port is configured
+    let provide_web_api = config.api.web.port > 0;
+
     // run the main code asynchronously
     info!("monitoring the network for activity...");
     let monitoring = {
-        let sender = Box::new(tx);
+        let sender = if provide_web_api {
+            dom::communication::create_mpsc_sender(tx)
+        } else {
+            dom::communication::create_noop_sender()
+        };
         let always_off = always_off.clone();
         let always_on = always_on.clone();
         let wakeup_server = wakeup_server.clone();
@@ -145,9 +152,6 @@ fn process(
         })
     };
 
-    // only start the web API if a valid port is configured
-    let provide_web_api = config.api.web.port > 0;
-
     // create a shared state of machines
     let shared_state: Arc<dom::communication::SharedStateMutex> = Arc::new(Mutex::new(
         dom::communication::SharedState::new(config.machines.len() + 1),
@@ -159,6 +163,11 @@ fn process(
             if provide_web_api {
                 let mut shared_state_sync = web::SharedStateSync::new(shared_state, rx);
                 shared_state_sync.sync().await;
+            } else {
+                // make sure the task never ends
+                loop {
+                    tokio::time::sleep(Duration::from_millis(100)).await;
+                }
             }
         })
     };
@@ -190,6 +199,11 @@ fn process(
             debug!("starting the web API...");
             if let Err(e) = server.launch(ip, port, log_level).await {
                 panic!("failed to launch Rocket-based web API: {}", e);
+            }
+        } else {
+            // make sure the task never ends
+            loop {
+                tokio::time::sleep(Duration::from_millis(100)).await;
             }
         }
     });
