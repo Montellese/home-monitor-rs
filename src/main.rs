@@ -287,10 +287,13 @@ fn process(
                 shared_state,
                 server_controls,
                 dependencies,
+                ip,
+                port,
+                log_level,
             );
 
             debug!("starting the web API...");
-            if let Err(e) = server.launch(ip, port, log_level).await {
+            if let Err(e) = server.launch().await {
                 panic!("failed to launch Rocket-based web API: {}", e);
             }
         } else {

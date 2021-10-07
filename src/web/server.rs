@@ -9,13 +9,7 @@ use crate::dom::communication::SharedStateMutex;
 use crate::dom::Dependencies;
 
 pub struct Server {
-    name: String,
-    version: String,
-    config: Configuration,
-
-    shared_state: Arc<SharedStateMutex>,
-    server_controls: Vec<ServerControl>,
-    dependencies: Dependencies,
+    server: rocket::Rocket<rocket::Build>,
 }
 
 impl Server {
@@ -27,25 +21,12 @@ impl Server {
         shared_state: Arc<SharedStateMutex>,
         server_controls: Vec<ServerControl>,
         dependencies: Dependencies,
-    ) -> Self {
-        Self {
-            name: name.to_string(),
-            version: version.to_string(),
-            config,
-            shared_state,
-            server_controls,
-            dependencies,
-        }
-    }
-
-    pub async fn launch(
-        &self,
         ip: std::net::IpAddr,
         port: u16,
         log_level: rocket::config::LogLevel,
-    ) -> std::result::Result<(), rocket::Error> {
+    ) -> Self {
         // create a custom configuration for Rocket
-        let mut config = rocket::Config {
+        let mut rocket_config = rocket::Config {
             address: ip,
             port,
             log_level,
@@ -54,12 +35,12 @@ impl Server {
         };
 
         // configure the "Server" identity
-        match rocket::config::Ident::try_new(format!("{}/{}", self.name, self.version)) {
-            Ok(ident) => config.ident = ident,
+        match rocket::config::Ident::try_new(format!("{}/{}", name, version)) {
+            Ok(ident) => rocket_config.ident = ident,
             Err(e) => warn!("failed to create custom identitiy for the web API: {}", e),
         };
 
-        let server = rocket::custom(&config)
+        let server = rocket::custom(&rocket_config)
             .mount(
                 "/api/v1/",
                 rocket::routes![
@@ -76,12 +57,18 @@ impl Server {
                     api::server::put_shutdown,
                 ],
             )
-            .manage(self.config.clone())
-            .manage(self.shared_state.clone())
-            .manage(self.server_controls.clone())
-            .manage(self.dependencies.clone())
-            .launch();
-        server.await
+            .manage(config)
+            .manage(shared_state)
+            .manage(server_controls)
+            .manage(dependencies);
+
+        Self {
+            server,
+        }
+    }
+
+    pub async fn launch(self) -> std::result::Result<(), rocket::Error> {
+        self.server.launch().await
     }
 
     pub fn get_num_workers() -> usize {
