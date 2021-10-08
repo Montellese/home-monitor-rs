@@ -10,13 +10,11 @@ use simplelog::{LevelFilter, SimpleLogger};
 mod configuration;
 mod control;
 mod dom;
+mod env;
 mod monitor;
 mod networking;
 mod utils;
 mod web;
-
-const PKG_NAME: &str = env!("CARGO_PKG_NAME");
-const PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Clap)]
 #[clap(version = clap::crate_version!(), author = clap::crate_authors!())]
@@ -171,7 +169,7 @@ fn process(
     // create the tokio runtime
     let rt = tokio::runtime::Builder::new_multi_thread()
         .worker_threads(web::Server::get_num_workers())
-        .thread_name(web::Server::get_thread_name(PKG_NAME))
+        .thread_name(web::Server::get_thread_name(env::PKG_NAME))
         .enable_all()
         .build()
         .expect("failed to build a tokio runtime");
@@ -281,8 +279,8 @@ fn process(
             let port = config.api.web.port;
 
             let server = web::Server::new(
-                PKG_NAME,
-                PKG_VERSION,
+                env::PKG_NAME,
+                env::PKG_VERSION,
                 config,
                 shared_state,
                 server_controls,
