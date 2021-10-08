@@ -54,3 +54,43 @@ impl Factory {
         }
     }
 }
+
+#[cfg(test)]
+pub mod test {
+    use rstest::*;
+
+    use super::*;
+    use crate::dom::device::test::*;
+
+    pub struct MockServerControl {
+        pub server: Server,
+        pub wakeup: crate::networking::MockWakeupServer,
+        pub shutdown: crate::networking::MockShutdownServer,
+
+        pub always_off: crate::utils::MockAlwaysOff,
+        pub always_on: crate::utils::MockAlwaysOn,
+    }
+
+    impl From<MockServerControl> for ServerControl {
+        fn from(mock_server_control: MockServerControl) -> Self {
+            Self {
+                server: mock_server_control.server,
+                wakeup: Arc::new(mock_server_control.wakeup),
+                shutdown: Arc::new(mock_server_control.shutdown),
+                always_off: Arc::new(mock_server_control.always_off),
+                always_on: Arc::new(mock_server_control.always_on),
+            }
+        }
+    }
+
+    #[fixture]
+    pub fn mocked_server_control(server: Server) -> MockServerControl {
+        MockServerControl {
+            server: server,
+            wakeup: crate::networking::MockWakeupServer::new(),
+            shutdown: crate::networking::MockShutdownServer::new(),
+            always_off: crate::utils::MockAlwaysOff::new(),
+            always_on: crate::utils::MockAlwaysOn::new(),
+        }
+    }
+}

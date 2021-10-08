@@ -313,6 +313,7 @@ mod tests {
     use rstest::*;
 
     use super::*;
+    use crate::control::test::*;
     use crate::dom::device::test::*;
 
     static PING_INTERVAL: Duration = Duration::from_secs(1);
@@ -343,38 +344,6 @@ mod tests {
             Box::new(crate::dom::communication::MockSender::new()),
             Box::new(crate::networking::MockPinger::new()),
         )
-    }
-
-    struct MockServerControl {
-        pub server: Server,
-        pub wakeup: crate::networking::MockWakeupServer,
-        pub shutdown: crate::networking::MockShutdownServer,
-
-        pub always_off: crate::utils::MockAlwaysOff,
-        pub always_on: crate::utils::MockAlwaysOn,
-    }
-
-    impl From<MockServerControl> for ServerControl {
-        fn from(mock_server_control: MockServerControl) -> Self {
-            Self {
-                server: mock_server_control.server,
-                wakeup: Arc::new(mock_server_control.wakeup),
-                shutdown: Arc::new(mock_server_control.shutdown),
-                always_off: Arc::new(mock_server_control.always_off),
-                always_on: Arc::new(mock_server_control.always_on),
-            }
-        }
-    }
-
-    #[fixture]
-    fn mocked_server_control(server: Server) -> MockServerControl {
-        MockServerControl {
-            server: server,
-            wakeup: crate::networking::MockWakeupServer::new(),
-            shutdown: crate::networking::MockShutdownServer::new(),
-            always_off: crate::utils::MockAlwaysOff::new(),
-            always_on: crate::utils::MockAlwaysOn::new(),
-        }
     }
 
     #[rstest]
