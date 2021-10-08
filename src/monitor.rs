@@ -313,22 +313,9 @@ mod tests {
     use rstest::*;
 
     use super::*;
-    use crate::utils::MacAddr;
+    use crate::dom::device::test::*;
 
     static PING_INTERVAL: Duration = Duration::from_secs(1);
-
-    static SERVER_ID: &str = "testserver";
-    static SERVER_NAME: &str = "Test Server";
-    static SERVER_MAC: &str = "aa:bb:cc:dd:ee:ff";
-    static SERVER_IP: &str = "10.0.0.1";
-    const SERVER_LAST_SEEN_TIMEOUT: u64 = 60;
-    static SERVER_USERNAME: &str = "username";
-    static SERVER_PASSWORD: &str = "password";
-
-    static MACHINE_ID: &str = "testmachine";
-    static MACHINE_NAME: &str = "Test Machine";
-    static MACHINE_IP: &str = "10.0.0.2";
-    const MACHINE_LAST_SEEN_TIMEOUT: u64 = 300;
 
     #[fixture]
     fn fake_clock() {
@@ -338,54 +325,6 @@ mod tests {
         );
         max_duration = max_duration.add(Duration::from_secs(1));
         Instant::set_time(max_duration.as_millis().try_into().unwrap());
-    }
-
-    #[fixture]
-    fn server_id() -> DeviceId {
-        SERVER_ID.parse().unwrap()
-    }
-
-    #[fixture]
-    fn server_ip() -> IpAddr {
-        SERVER_IP.parse().unwrap()
-    }
-
-    #[fixture]
-    fn server_mac() -> MacAddr {
-        MacAddr::V6(SERVER_MAC.parse().unwrap())
-    }
-
-    #[fixture]
-    fn server() -> Server {
-        Server::new(
-            &server_id(),
-            SERVER_NAME,
-            server_ip(),
-            SERVER_LAST_SEEN_TIMEOUT,
-            server_mac(),
-            SERVER_USERNAME,
-            SERVER_PASSWORD,
-        )
-    }
-
-    #[fixture]
-    fn machine_id() -> DeviceId {
-        MACHINE_ID.parse().unwrap()
-    }
-
-    #[fixture]
-    fn machine_ip() -> IpAddr {
-        MACHINE_IP.parse().unwrap()
-    }
-
-    #[fixture]
-    fn machine() -> Machine {
-        Machine::new(
-            &machine_id(),
-            MACHINE_NAME,
-            machine_ip(),
-            MACHINE_LAST_SEEN_TIMEOUT,
-        )
     }
 
     #[fixture]

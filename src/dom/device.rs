@@ -214,3 +214,71 @@ impl fmt::Display for Device {
         }
     }
 }
+
+#[cfg(test)]
+pub mod test {
+    use rstest::*;
+
+    use super::*;
+
+    pub static SERVER_ID: &str = "testserver";
+    pub static SERVER_NAME: &str = "Test Server";
+    pub static SERVER_MAC: &str = "aa:bb:cc:dd:ee:ff";
+    pub static SERVER_IP: &str = "10.0.0.1";
+    pub const SERVER_LAST_SEEN_TIMEOUT: u64 = 60;
+    pub static SERVER_USERNAME: &str = "username";
+    pub static SERVER_PASSWORD: &str = "password";
+
+    pub static MACHINE_ID: &str = "testmachine";
+    pub static MACHINE_NAME: &str = "Test Machine";
+    pub static MACHINE_IP: &str = "10.0.0.2";
+    pub const MACHINE_LAST_SEEN_TIMEOUT: u64 = 300;
+
+    #[fixture]
+    pub fn server_id() -> DeviceId {
+        SERVER_ID.parse().unwrap()
+    }
+
+    #[fixture]
+    pub fn server_ip() -> IpAddr {
+        SERVER_IP.parse().unwrap()
+    }
+
+    #[fixture]
+    pub fn server_mac() -> MacAddr {
+        MacAddr::V6(SERVER_MAC.parse().unwrap())
+    }
+
+    #[fixture]
+    pub fn server() -> Server {
+        Server::new(
+            &server_id(),
+            SERVER_NAME,
+            server_ip(),
+            SERVER_LAST_SEEN_TIMEOUT,
+            server_mac(),
+            SERVER_USERNAME,
+            SERVER_PASSWORD,
+        )
+    }
+
+    #[fixture]
+    pub fn machine_id() -> DeviceId {
+        MACHINE_ID.parse().unwrap()
+    }
+
+    #[fixture]
+    pub fn machine_ip() -> IpAddr {
+        MACHINE_IP.parse().unwrap()
+    }
+
+    #[fixture]
+    pub fn machine() -> Machine {
+        Machine::new(
+            &machine_id(),
+            MACHINE_NAME,
+            machine_ip(),
+            MACHINE_LAST_SEEN_TIMEOUT,
+        )
+    }
+}

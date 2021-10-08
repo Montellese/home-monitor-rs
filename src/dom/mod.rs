@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 pub mod communication;
-mod device;
+pub mod device;
 
 pub use device::{Device, DeviceId, Machine, Server};
 
