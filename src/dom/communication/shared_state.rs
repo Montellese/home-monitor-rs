@@ -50,7 +50,7 @@ impl SharedState {
     }
 
     fn raw_update_machine_from_machine(machine: &mut Machine, updated_machine: &Machine) -> bool {
-        if machine.ip == updated_machine.ip {
+        if machine.id == updated_machine.id {
             machine.is_online = updated_machine.is_online;
             machine.last_seen = updated_machine.last_seen;
             machine.last_seen_date = updated_machine.last_seen_date;
@@ -63,3 +63,65 @@ impl SharedState {
 }
 
 pub type SharedStateMutex = std::sync::Mutex<SharedState>;
+
+#[cfg(test)]
+mod test {
+    use rstest::*;
+
+    use super::*;
+    use crate::dom::device::test::*;
+
+    #[fixture]
+    fn devices(server: Server, machine: Machine) -> Vec<Device> {
+        vec![Device::Server(server), Device::Machine(machine)]
+    }
+
+    #[fixture]
+    fn shared_state(devices: Vec<Device>) -> SharedState {
+        SharedState::new(devices)
+    }
+
+    #[rstest]
+    fn test_can_get_devices(shared_state: SharedState, devices: Vec<Device>) {
+        assert_eq!(*shared_state.get_devices(), devices);
+    }
+
+    #[rstest]
+    fn test_update_devices_adds_device_if_not_existing(
+        mut shared_state: SharedState,
+        mut devices: Vec<Device>,
+    ) {
+        // SETUP
+        let mut new_device = devices.last().unwrap().clone();
+        match new_device {
+            Device::Server(ref mut server) => server.machine.id = "newserver".parse().unwrap(),
+            Device::Machine(ref mut machine) => machine.id = "newmachine".parse().unwrap(),
+        };
+
+        // TESTING
+        assert_eq!(*shared_state.get_devices(), devices);
+
+        shared_state.update_device(new_device.clone());
+        devices.push(new_device);
+
+        assert_eq!(*shared_state.get_devices(), devices);
+    }
+
+    #[rstest]
+    fn test_can_update_existing_device(mut shared_state: SharedState, mut devices: Vec<Device>) {
+        // TESTING
+        assert_eq!(*shared_state.get_devices(), devices);
+
+        let device = devices.last_mut().unwrap();
+        match device {
+            Device::Server(ref mut server) => server.machine.is_online = !server.machine.is_online,
+            Device::Machine(ref mut machine) => machine.is_online = !machine.is_online,
+        };
+
+        shared_state.update_device(device.clone());
+
+        assert_eq!(*shared_state.get_devices(), devices);
+    }
+
+    // TODO(Montellese)
+}

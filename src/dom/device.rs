@@ -32,7 +32,7 @@ impl fmt::Display for DeviceId {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Machine {
     pub id: DeviceId,
     pub name: String,
@@ -96,7 +96,7 @@ impl fmt::Display for Machine {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Server {
     pub machine: Machine,
 
@@ -142,7 +142,7 @@ impl fmt::Display for Server {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Device {
     Server(Server),
     Machine(Machine),
