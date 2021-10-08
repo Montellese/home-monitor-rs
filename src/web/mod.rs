@@ -1,6 +1,6 @@
 pub mod api;
 pub mod serialization;
-mod server;
+pub mod server;
 mod shared_state_sync;
 
 pub use server::Server;

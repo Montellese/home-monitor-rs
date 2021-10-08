@@ -4,23 +4,29 @@ use std::option::Option;
 
 use chrono::{DateTime, Utc};
 use macaddr::MacAddr8;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::dom;
 use crate::utils::MacAddr;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Device {
     pub name: String,
     pub ip: IpAddr,
-    #[serde(default)]
+    #[serde(default = "Device::default_mac")]
     #[serde(skip_serializing_if = "MacAddr::is_nil")]
     pub mac: MacAddr,
 
     pub last_seen_timeout: u64,
     pub is_online: bool,
     pub last_seen: Option<DateTime<Utc>>,
+}
+
+impl Device {
+    pub fn default_mac() -> MacAddr {
+        MacAddr::V8(MacAddr8::nil())
+    }
 }
 
 impl From<dom::Machine> for Device {
@@ -34,7 +40,7 @@ impl From<&dom::Machine> for Device {
         Self {
             name: machine.name.clone(),
             ip: machine.ip,
-            mac: MacAddr::V8(MacAddr8::nil()),
+            mac: Self::default_mac(),
             last_seen_timeout: machine.last_seen_timeout,
             is_online: machine.is_online,
             last_seen: machine.last_seen_date,

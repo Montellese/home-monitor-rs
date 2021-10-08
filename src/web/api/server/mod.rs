@@ -12,6 +12,8 @@ pub use status::get_status;
 pub use unknown_device_error::UnknownDeviceError;
 pub use wakeup::put_wakeup;
 
+use crate::dom::{Device, DeviceId};
+
 fn get_server_control(
     servers: &[crate::control::ServerControl],
     server_id: String,
@@ -27,11 +29,20 @@ fn get_server_control(
 }
 
 fn get_device<'a>(
-    devices: &'a [crate::dom::Device],
-    device_id: &crate::dom::DeviceId,
-) -> Result<&'a crate::dom::Device, UnknownDeviceError> {
+    devices: &'a [Device],
+    device_id: &DeviceId,
+) -> Result<&'a Device, UnknownDeviceError> {
     match devices.iter().find(|device| device.id() == device_id) {
         Some(device) => Ok(device),
         None => Err(UnknownDeviceError::new(device_id.clone())),
+    }
+}
+
+#[cfg(test)]
+pub mod test {
+    use super::*;
+
+    pub fn get_server_api_endpoint(endpoint: &str, server_id: &DeviceId) -> String {
+        format!("/api/v1/server/{}{}", server_id.to_string(), endpoint)
     }
 }
