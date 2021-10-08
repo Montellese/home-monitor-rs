@@ -152,6 +152,7 @@ fn check_dependencies(
 #[cfg(test)]
 mod tests {
     use rstest::*;
+    use serde_json::json;
 
     use super::*;
     use crate::utils::MacAddr;
@@ -215,7 +216,7 @@ mod tests {
 
     #[rstest]
     fn test_parse_from_str() {
-        let config_json = r#"{
+        let config_json = json!({
             "network": {
                 "interface": "eth0",
                 "ping": {
@@ -225,9 +226,7 @@ mod tests {
             },
             "api": {
                 "files": {
-                    "root": "/etc/home-monitor/",
-                    "alwaysOff": "/etc/home-monitor/alwaysoff",
-                    "alwaysOn": "/etc/home-monitor/alwayson"
+                    "root": "/etc/home-monitor/"
                 },
                 "web": {
                     "ip": "127.0.0.1",
@@ -272,9 +271,9 @@ mod tests {
                     "mywifesmachine"
                 ]
             }
-        }"#;
+        });
 
-        let config = parse_from_str(config_json);
+        let config = parse_from_str(&config_json.to_string());
         assert!(config.is_ok());
     }
 
