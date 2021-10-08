@@ -315,6 +315,7 @@ mod tests {
     use super::*;
     use crate::control::test::*;
     use crate::dom::device::test::*;
+    use crate::dom::test::*;
 
     static PING_INTERVAL: Duration = Duration::from_secs(1);
 
@@ -326,14 +327,6 @@ mod tests {
         );
         max_duration = max_duration.add(Duration::from_secs(1));
         Instant::set_time(max_duration.as_millis().try_into().unwrap());
-    }
-
-    #[fixture]
-    fn dependencies() -> Dependencies {
-        [(server_id(), vec![machine_id()])]
-            .iter()
-            .cloned()
-            .collect()
     }
 
     fn default_mocks() -> (
