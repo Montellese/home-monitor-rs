@@ -1,6 +1,7 @@
 use rocket::http::Status;
+use rocket::response::status;
 
-pub type Result<T> = std::result::Result<T, (Status, String)>;
+pub type Result<T> = std::result::Result<T, status::Custom<String>>;
 
 pub fn handle<T, E: std::fmt::Display>(
     result: std::result::Result<T, E>,
@@ -8,7 +9,7 @@ pub fn handle<T, E: std::fmt::Display>(
 ) -> Result<T> {
     match result {
         Ok(value) => Ok(value),
-        Err(e) => Err((status, e.to_string())),
+        Err(e) => Err(status::Custom(status, e.to_string())),
     }
 }
 
