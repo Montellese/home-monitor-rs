@@ -122,6 +122,4 @@ mod test {
 
         assert_eq!(*shared_state.get_devices(), devices);
     }
-
-    // TODO(Montellese)
 }
