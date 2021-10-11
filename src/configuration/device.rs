@@ -2,11 +2,14 @@ use std::fmt;
 use std::net::IpAddr;
 use std::str::FromStr;
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use super::super::utils::MacAddr;
 
-#[derive(Clone, Debug, Default, Hash, Eq, PartialEq, Ord, PartialOrd, Deserialize, Serialize)]
+#[derive(
+    Clone, Debug, Default, Hash, Eq, PartialEq, Ord, PartialOrd, Deserialize, Serialize, JsonSchema,
+)]
 pub struct DeviceId(pub String);
 
 impl FromStr for DeviceId {
@@ -23,7 +26,7 @@ impl fmt::Display for DeviceId {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Machine {
     #[serde(skip)]
@@ -35,7 +38,7 @@ pub struct Machine {
     pub last_seen_timeout: u64,
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Server {
     #[serde(flatten)]
@@ -46,7 +49,7 @@ pub struct Server {
     pub password: String,
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(untagged)]
 pub enum Device {
     Server(Server),

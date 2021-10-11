@@ -1,52 +1,57 @@
-use anyhow::anyhow;
+use std::result::Result;
+
 use rocket::serde::json::Json;
+use rocket::{delete, get, post};
+use rocket_okapi::{openapi, JsonSchema};
 use serde::{Deserialize, Serialize};
 
 use super::get_server_control;
 use crate::control::ServerControl;
-use crate::web::api::result;
+use crate::web::api;
+use crate::web::api::server::UnknownDeviceError;
 
-#[derive(Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, PartialEq, Deserialize, Serialize, JsonSchema)]
 pub struct AlwaysOnResponse {
     always_on: bool,
 }
 
-#[rocket::get("/server/<server>/always_on")]
+#[openapi(tag = "Server")]
+#[get("/server/<server>/always_on")]
 pub fn get_always_on(
     server: String,
     state: &rocket::State<Vec<ServerControl>>,
-) -> result::Result<Json<AlwaysOnResponse>> {
-    match result::handle_not_found(get_server_control(state.inner(), server)) {
-        Ok(control) => Ok(Json(AlwaysOnResponse {
-            always_on: control.always_on.is_always_on(),
-        })),
-        Err(e) => Err(e),
-    }
+) -> Result<Json<AlwaysOnResponse>, UnknownDeviceError> {
+    let control = get_server_control(state.inner(), server)?;
+    Ok(Json(AlwaysOnResponse {
+        always_on: control.always_on.is_always_on(),
+    }))
 }
 
-#[rocket::post("/server/<server>/always_on")]
+#[openapi(tag = "Server")]
+#[post("/server/<server>/always_on")]
 pub fn post_always_on(
     server: String,
     state: &rocket::State<Vec<ServerControl>>,
-) -> result::Result<Json<AlwaysOnResponse>> {
-    let control = result::handle_not_found(get_server_control(state.inner(), server))?;
+) -> Result<Json<AlwaysOnResponse>, api::Error> {
+    let control = get_server_control(state.inner(), server)?;
 
-    match result::handle_internal_server_error(control.always_on.set_always_on()) {
+    match control.always_on.set_always_on() {
         Ok(_) => Ok(Json(AlwaysOnResponse { always_on: true })),
-        Err(e) => Err(e),
+        Err(e) => Err(api::Error::from(api::InternalServerError::from(e))),
     }
 }
 
-#[rocket::delete("/server/<server>/always_on")]
+#[openapi(tag = "Server")]
+#[delete("/server/<server>/always_on")]
 pub fn delete_always_on(
     server: String,
     state: &rocket::State<Vec<ServerControl>>,
-) -> result::Result<Json<AlwaysOnResponse>> {
-    let control = result::handle_not_found(get_server_control(state.inner(), server))?;
+) -> Result<Json<AlwaysOnResponse>, api::Error> {
+    let control = get_server_control(state.inner(), server)?;
 
-    match result::handle_internal_server_error(control.always_on.reset_always_on()) {
+    match control.always_on.reset_always_on() {
         Ok(_) => Ok(Json(AlwaysOnResponse { always_on: false })),
-        Err(e) => Err(e),
+        Err(e) => Err(api::Error::from(api::InternalServerError::from(e))),
     }
 }
 
@@ -56,6 +61,7 @@ mod test {
     use std::net::IpAddr;
     use std::sync::Arc;
 
+    use anyhow::anyhow;
     use rocket::http::{ContentType, Status};
     use rocket::log::LogLevel;
     use rstest::*;

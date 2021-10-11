@@ -1,14 +1,15 @@
 use std::convert::From;
 use std::sync::Arc;
 
+use rocket::get;
 use rocket::serde::json::Json;
+use rocket_okapi::{openapi, JsonSchema};
 use serde::{Deserialize, Serialize};
 
 use crate::dom::communication::SharedStateMutex;
-use crate::web::api::result;
 use crate::web::serialization::Device;
 
-#[derive(Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Status {
     devices: Vec<Device>,
@@ -20,8 +21,9 @@ impl Status {
     }
 }
 
-#[rocket::get("/status")]
-pub fn get_status(state: &rocket::State<Arc<SharedStateMutex>>) -> result::Result<Json<Status>> {
+#[openapi(tag = "General")]
+#[get("/status")]
+pub fn get_status(state: &rocket::State<Arc<SharedStateMutex>>) -> Json<Status> {
     // get the devices from the shared state
     let shared_state = state.lock().unwrap();
     let devices = shared_state.get_devices();
@@ -29,7 +31,7 @@ pub fn get_status(state: &rocket::State<Arc<SharedStateMutex>>) -> result::Resul
     let status_devices = devices.iter().map(Device::from).collect();
 
     // create the status response from the devices
-    Ok(Json(Status::new(status_devices)))
+    Json(Status::new(status_devices))
 }
 
 #[cfg(test)]

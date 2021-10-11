@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 use std::fmt;
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use super::DeviceId;
 
-#[derive(Clone, Debug, Default, Eq, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Eq, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(transparent)]
 pub struct Dependencies(pub HashMap<DeviceId, Vec<DeviceId>>);
 

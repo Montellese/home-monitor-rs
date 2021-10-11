@@ -1,12 +1,26 @@
+use std::result::Result;
+
+use rocket::put;
+use rocket_okapi::openapi;
+
 use super::get_server_control;
 use crate::control::ServerControl;
-use crate::web::api::result;
+use crate::web::api;
 
-#[rocket::put("/server/<server>/wakeup")]
-pub fn put_wakeup(server: String, state: &rocket::State<Vec<ServerControl>>) -> result::Result<()> {
-    let control = result::handle_not_found(get_server_control(state.inner(), server))?;
+#[openapi(tag = "Server")]
+#[put("/server/<server>/wakeup")]
+pub fn put_wakeup(
+    server: String,
+    state: &rocket::State<Vec<ServerControl>>,
+) -> Result<(), api::Error> {
+    let control = get_server_control(state.inner(), server)?;
 
-    result::handle_internal_server_error(control.wakeup.wakeup())
+    match control.wakeup.wakeup() {
+        Ok(_) => Ok(()),
+        Err(e) => Err(api::Error::from(api::InternalServerError::from(
+            anyhow::Error::from(e),
+        ))),
+    }
 }
 
 #[cfg(test)]

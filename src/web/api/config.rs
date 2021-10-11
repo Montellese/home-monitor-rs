@@ -1,8 +1,11 @@
+use rocket::get;
 use rocket::serde::json::Json;
+use rocket_okapi::openapi;
 
 use crate::configuration::Configuration;
 
-#[rocket::get("/config")]
+#[openapi(tag = "General")]
+#[get("/config")]
 pub fn get_config(state: &rocket::State<Configuration>) -> Json<Configuration> {
     Json(state.inner().clone())
 }

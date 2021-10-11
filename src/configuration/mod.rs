@@ -3,6 +3,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 mod api;
@@ -23,7 +24,7 @@ pub const LOCATION: &str = "/etc/home-monitor/home-monitor.json";
 
 pub type DeviceMap = HashMap<DeviceId, Device>;
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Configuration {
     pub api: api::Api,

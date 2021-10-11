@@ -2,12 +2,25 @@ use std::net::IpAddr;
 use std::sync::Arc;
 
 use log::warn;
+use rocket::fs::{FileServer, relative};
+use rocket_okapi::swagger_ui::{make_swagger_ui, SwaggerUIConfig};
 
 use super::api;
 use crate::configuration::Configuration;
 use crate::control::ServerControl;
 use crate::dom::communication::SharedStateMutex;
 use crate::dom::Dependencies;
+use crate::env::PKG_NAME;
+
+static OPENAPI_SPEC: &str = "/api/v1/openapi.json";
+
+fn swagger_ui() -> SwaggerUIConfig {
+    SwaggerUIConfig {
+        url: OPENAPI_SPEC.to_string(),
+        urls: vec![],
+        ..Default::default()
+    }
+}
 
 pub struct Server {
     server: rocket::Rocket<rocket::Build>,
@@ -42,22 +55,8 @@ impl Server {
         };
 
         let server = rocket::custom(&rocket_config)
-            .mount(
-                "/api/v1/",
-                rocket::routes![
-                    api::get_config,
-                    api::get_status,
-                    api::server::get_status,
-                    api::server::get_always_off,
-                    api::server::post_always_off,
-                    api::server::delete_always_off,
-                    api::server::get_always_on,
-                    api::server::post_always_on,
-                    api::server::delete_always_on,
-                    api::server::put_wakeup,
-                    api::server::put_shutdown,
-                ],
-            )
+            .mount("/api/v1/", api::get_routes())
+            .mount("/docs/swagger/", make_swagger_ui(&swagger_ui()))
             .manage(config)
             .manage(shared_state)
             .manage(server_controls)
