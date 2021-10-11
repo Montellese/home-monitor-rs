@@ -11,7 +11,7 @@ impl NoopSender {
 }
 
 impl Sender for NoopSender {
-    fn send(&self, _: Device) -> Result<(), Box<dyn std::error::Error>> {
+    fn send(&self, _: Device) -> anyhow::Result<()> {
         Ok(())
     }
 }

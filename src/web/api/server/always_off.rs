@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 
@@ -200,7 +201,7 @@ mod test {
             .always_off
             .expect_set_always_off()
             .once()
-            .return_once(|| Err(Box::new(Error::new(ErrorKind::PermissionDenied, ""))));
+            .return_once(|| Err(anyhow!(Error::new(ErrorKind::PermissionDenied, ""))));
 
         // TESTING
         let client = get_client(
@@ -309,7 +310,7 @@ mod test {
             .always_off
             .expect_reset_always_off()
             .once()
-            .return_once(|| Err(Box::new(Error::new(ErrorKind::PermissionDenied, ""))));
+            .return_once(|| Err(anyhow!(Error::new(ErrorKind::PermissionDenied, ""))));
 
         // TESTING
         let client = get_client(

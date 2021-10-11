@@ -15,10 +15,8 @@ impl MpscSender {
 }
 
 impl Sender for MpscSender {
-    fn send(&self, device: Device) -> Result<(), Box<dyn std::error::Error>> {
-        match self.sender.send(device) {
-            Ok(_) => Ok(()),
-            Err(e) => Err(Box::new(e)),
-        }
+    fn send(&self, device: Device) -> anyhow::Result<()> {
+        self.sender.send(device)?;
+        Ok(())
     }
 }

@@ -5,5 +5,5 @@ use super::super::Device;
 
 #[cfg_attr(test, automock)]
 pub trait Sender: Send {
-    fn send(&self, device: Device) -> Result<(), Box<dyn std::error::Error>>;
+    fn send(&self, device: Device) -> anyhow::Result<()>;
 }

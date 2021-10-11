@@ -1,6 +1,8 @@
 use std::convert::From;
 use std::path::{Path, PathBuf};
 
+use anyhow::anyhow;
+
 use super::super::configuration;
 use super::AlwaysOff;
 
@@ -33,14 +35,12 @@ impl AlwaysOff for AlwaysOffFile {
         self.file.exists()
     }
 
-    fn set_always_off(&self) -> Result<(), Box<dyn std::error::Error>> {
-        match std::fs::write(&self.file, "") {
-            Ok(_) => Ok(()),
-            Err(e) => Err(Box::new(e)),
-        }
+    fn set_always_off(&self) -> anyhow::Result<()> {
+        std::fs::write(&self.file, "")?;
+        Ok(())
     }
 
-    fn reset_always_off(&self) -> Result<(), Box<dyn std::error::Error>> {
+    fn reset_always_off(&self) -> anyhow::Result<()> {
         match std::fs::remove_file(&self.file) {
             Ok(_) => Ok(()),
             Err(e) => {
@@ -49,7 +49,7 @@ impl AlwaysOff for AlwaysOffFile {
                     // it's OK if the file didn't exist anyway
                     NotFound => Ok(()),
                     // otherwise return the error
-                    _ => Err(Box::new(e)),
+                    _ => Err(anyhow!(e)),
                 }
             }
         }

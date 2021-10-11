@@ -10,7 +10,7 @@ use super::super::utils::MacAddr;
 pub struct DeviceId(pub String);
 
 impl FromStr for DeviceId {
-    type Err = Box<dyn std::error::Error>;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self(s.to_string()))
