@@ -139,6 +139,8 @@ sudo systemctl [status|start|stop|restart|enable|disable] home-monitor-rs
 
 `home-monitor-rs` provides an optional web / REST API to observe and control its behaviour. Based on the configured IP address and port the REST API is available under `http://<IP>:<PORT>/api/v1/` followed by a specific REST endpoint. The following chapters describe the available endpoints.
 
+A detailed and automatically generated [OpenAPI specification](https://www.openapis.org/) is available through [Swagger UI](https://swagger.io/tools/swagger-ui/) and [RapiDoc](https://mrin9.github.io/RapiDoc/) under `http://<IP>:<PORT>/docs/swagger` and `http://<IP>:<PORT>/docs/rapidoc`.
+
 #### GET /config
 
 This REST endpoint returns the currently used / loaded configuration in JSON format.
