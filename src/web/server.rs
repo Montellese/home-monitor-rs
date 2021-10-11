@@ -2,7 +2,11 @@ use std::net::IpAddr;
 use std::sync::Arc;
 
 use log::warn;
-use rocket::fs::{FileServer, relative};
+use rocket_okapi::rapidoc::{
+    make_rapidoc, GeneralConfig, HideShowConfig, LayoutConfig, NavConfig, RapiDocConfig,
+    RenderStyle, Theme, UiConfig,
+};
+use rocket_okapi::settings::UrlObject;
 use rocket_okapi::swagger_ui::{make_swagger_ui, SwaggerUIConfig};
 
 use super::api;
@@ -18,6 +22,34 @@ fn swagger_ui() -> SwaggerUIConfig {
     SwaggerUIConfig {
         url: OPENAPI_SPEC.to_string(),
         urls: vec![],
+        ..Default::default()
+    }
+}
+
+fn rapidoc() -> RapiDocConfig {
+    RapiDocConfig {
+        general: GeneralConfig {
+            spec_urls: vec![UrlObject::new(PKG_NAME, OPENAPI_SPEC)],
+            sort_tags: true,
+            ..Default::default()
+        },
+        ui: UiConfig {
+            theme: Theme::Dark,
+            ..Default::default()
+        },
+        nav: NavConfig {
+            use_path_in_nav_bar: true,
+            ..Default::default()
+        },
+        layout: LayoutConfig {
+            render_style: RenderStyle::Read,
+            ..Default::default()
+        },
+        hide_show: HideShowConfig {
+            show_info: false,
+            allow_authentication: false,
+            ..Default::default()
+        },
         ..Default::default()
     }
 }
@@ -57,6 +89,7 @@ impl Server {
         let server = rocket::custom(&rocket_config)
             .mount("/api/v1/", api::get_routes())
             .mount("/docs/swagger/", make_swagger_ui(&swagger_ui()))
+            .mount("/docs/rapidoc/", make_rapidoc(&rapidoc()))
             .manage(config)
             .manage(shared_state)
             .manage(server_controls)
