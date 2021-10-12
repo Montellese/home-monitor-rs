@@ -1,0 +1,59 @@
+name: Rust Build Debian Package
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
+
+      - name: Cache for Rust
+        id: cache-cargo
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-stable-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-stable-
+
+      - name: Build using Rust
+        uses: actions-rs/cargo@v1
+        if: steps.cache-cargo.outputs.cache-hit != 'true'
+        with:
+          command: build
+
+      - name: Install cargo-deb
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: cargo-deb
+
+      - name: Build Debian package
+        uses: actions-rs/cargo@v1
+        with:
+          command: deb
+
+      - name: Archive the built Debian package
+        uses: actions/upload-artifact@v2
+        with:
+          name: home-monitor-rs-deb
+          path: target/debian/*.deb
