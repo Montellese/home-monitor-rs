@@ -3,6 +3,12 @@ name = "home-monitor-rs"
 version = "0.1.0"
 authors = ["Sascha Montellese <sascha.montellese@gmail.com>"]
 edition = "2018"
+description = "home-monitor-rs monitors network devices and controls one or more servers depending on the status of these devices."
+readme = "README.md"
+repository = "https://github.com/Montellese/home-monitor-rs"
+license-file = "LICENSE"
+keywords = ["network", "monitoring"]
+categories = ["command-line-utilities"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
