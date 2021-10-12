@@ -7,4 +7,4 @@ Restart=on-failure
 ExecStart=home-monitor-rs -c /etc/home-monitor-rs/home-monitor-rs.json
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=network-online.target
