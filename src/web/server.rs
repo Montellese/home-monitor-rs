@@ -161,7 +161,7 @@ pub mod test {
             },
             "api": {
                 "files": {
-                    "root": "/etc/home-monitor/",
+                    "root": "/etc/home-monitor-rs/",
                 },
                 "web": {
                     "ip": "127.0.0.1",

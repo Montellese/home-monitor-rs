@@ -208,7 +208,7 @@ mod tests {
     #[rstest]
     fn test_parse_from_file() {
         let mut config_path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        config_path.push("home-monitor.json.example");
+        config_path.push("home-monitor-rs.json.example");
 
         let config = parse_from_file(config_path);
         assert!(config.is_ok());
@@ -226,7 +226,7 @@ mod tests {
             },
             "api": {
                 "files": {
-                    "root": "/etc/home-monitor/"
+                    "root": "/etc/home-monitor-rs/"
                 },
                 "web": {
                     "ip": "127.0.0.1",
