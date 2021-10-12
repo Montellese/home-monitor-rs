@@ -35,6 +35,7 @@ In addition to running `home-monitor-rs` as a service it can also be used to man
     - [Requirements](#requirements)
     - [Build](#build)
     - [Run](#run)
+    - [Debian Packaging](#debian-packaging)
 
 ## How to use
 
@@ -237,3 +238,18 @@ cargo run -- -c <path to JSON configuration file>
 ```
 sudo setcap cap_net_raw=eip target/debug/home-monitor-rs
 ```
+
+### Debian Packaging
+`home-monitor-rs` provides the necessary configuration to build a Debian package (including a `systemd` service file) using [`cargo-deb`](https://github.com/mmstick/cargo-deb).
+
+First install `cargo-deb` using
+```
+cargo install cargo-deb
+```
+and then run
+```
+cargo deb
+```
+to build a Debian package placed under `target/debian/`.
+
+*NOTE*: The `systemd` service file is installed and enabled when installing the Debian package but `home-monitor-rs.service` is not automatically started because the user first has to provide a proper configuration at `/etc/home-monitor-rs/home-monitor-rs.json` based on the example configuration located at `/etc/home-monitor-rs/home-monitor-rs.json.example`.
