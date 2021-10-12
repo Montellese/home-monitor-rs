@@ -33,6 +33,20 @@ tokio = { version = "1.21", features = ["full"] }
 wakey = "0.2.2"
 
 [dev-dependencies]
+cargo-deb = "1.32.0"
 mockall = "0.11.2"
 rstest = "0.15.0"
 sn_fake_clock = "0.4.14"
+
+[package.metadata.deb]
+extended-description = "home-monitor-rs is a service designed to run on an \"always online\" device (like a router or a Raspberry Pi) which constantly monitors a configurable list of network devices (based on their IP addresses) to see if any of them are online. Depending on the configured dependencies between servers and devices a server is automatically turned off using SSH if all relevant devices are offline. It at least one of the devices is online the server is automatically turned on using Wake-on-LAN."
+section = "Utility"
+assets = [
+    ["target/release/home-monitor-rs", "/usr/bin/", "755"],
+    ["home-monitor-rs.json.example", "/etc/home-monitor-rs/", "644"],
+    ["README.md", "/usr/share/doc/home-monitor-rs/", "644"],
+    ["LICENSE", "/usr/share/doc/home-monitor-rs/copyright", "644"],
+]
+maintainer-scripts = "debian/"
+conf-files = ["./home-monitor-rs.json.example"]
+systemd-units = { unit-scripts = "./", start = false }
