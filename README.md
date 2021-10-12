@@ -232,3 +232,8 @@ To run the development version of `home-monitor-rs` use Rust's package manager `
 ```
 cargo run -- -c <path to JSON configuration file>
 ```
+
+*NOTE*: If your user does not have the permissions to create RAW sockets you first need to set the necessary capability using
+```
+sudo setcap cap_net_raw=eip target/debug/home-monitor-rs
+```
