@@ -247,7 +247,7 @@ impl Monitor {
             for device in self.devices.iter_mut() {
                 trace!("updating online state of {}...", device.read().unwrap());
                 let is_device_online = self.pinger.is_online(device.read().unwrap().ip());
-                if Self::update_device_online(&mut *device.write().unwrap(), is_device_online) {
+                if Self::update_device_online(&mut device.write().unwrap(), is_device_online) {
                     Self::publish_device_update(&*self.sender, device.read().unwrap().clone());
                 }
             }

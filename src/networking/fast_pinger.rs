@@ -82,6 +82,7 @@ impl Pinger for FastPinger {
             };
 
             // early return on an error
+            #[allow(clippy::question_mark)]
             if let Err(e) = result {
                 return Err(e);
             }

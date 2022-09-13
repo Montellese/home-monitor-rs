@@ -34,11 +34,11 @@ pub fn get_network_interface(
     let iface = ifaces
         .into_iter()
         .find(|iface| iface.name == interface_name && !iface.ips.is_empty());
-    return match iface {
+    match iface {
         Some(iface) => Ok(iface),
         None => Err(networking_error::NetworkingError(format!(
             "unknown network interface: {}",
             interface_name
         ))),
-    };
+    }
 }
