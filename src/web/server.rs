@@ -98,7 +98,9 @@ impl Server {
         Self { server }
     }
 
-    pub async fn launch(self) -> std::result::Result<(), rocket::Error> {
+    pub async fn launch(
+        self,
+    ) -> std::result::Result<rocket::Rocket<rocket::Ignite>, rocket::Error> {
         self.server.launch().await
     }
 

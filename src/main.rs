@@ -3,7 +3,7 @@ use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use clap::Clap;
+use clap::Parser;
 use log::{debug, error, info};
 use simplelog::{LevelFilter, SimpleLogger};
 
@@ -16,34 +16,32 @@ mod networking;
 mod utils;
 mod web;
 
-#[derive(Clap)]
-#[clap(version = clap::crate_version!(), author = clap::crate_authors!())]
+#[derive(Parser)]
+#[clap(author, version, about)]
 struct Opts {
+    // Path to the JSON configuration file
     #[clap(
         short = 'c',
         long = "config",
         value_name = "FILE",
-        default_value = configuration::LOCATION,
-        about = "Path to the JSON configuration file"
+        default_value = configuration::LOCATION
     )]
     config: String,
 
-    #[clap(
-        short = 'd',
-        long = "debug",
-        group = "verbosity",
-        about = "Enable debug logging"
-    )]
+    // Enable debug logging
+    #[clap(short = 'd', long = "debug", group = "verbosity")]
     debug: bool,
+
+    // Enable verbose logging
     #[clap(
         short = 'v',
         long = "verbose",
         conflicts_with = "debug",
-        group = "verbosity",
-        about = "Enable verbose logging"
+        group = "verbosity"
     )]
     verbose: bool,
 
+    // Shut down the specified server(s)
     #[clap(
         short = 's',
         long = "shutdown",
@@ -51,10 +49,11 @@ struct Opts {
         min_values = 1,
         value_name = "SERVER",
         conflicts_with = "wakeup",
-        group = "mode",
-        about = "Shut down the specified server(s)"
+        group = "mode"
     )]
     shutdown: Vec<String>,
+
+    // Wake up the specified server(s)
     #[clap(
         short = 'w',
         long = "wakeup",
@@ -62,8 +61,7 @@ struct Opts {
         min_values = 1,
         value_name = "SERVER",
         conflicts_with = "shutdown",
-        group = "mode",
-        about = "Wake up the specified server(s)"
+        group = "mode"
     )]
     wakeup: Vec<String>,
 }
