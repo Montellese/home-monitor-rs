@@ -11,7 +11,7 @@ use crate::dom::Dependencies;
 use crate::web::api::server::UnknownDeviceError;
 use crate::web::serialization::Device;
 
-#[derive(Debug, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Status {
     server: Device,

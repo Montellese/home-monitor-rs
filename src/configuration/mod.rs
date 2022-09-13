@@ -24,7 +24,7 @@ pub const LOCATION: &str = "/etc/home-monitor/home-monitor.json";
 
 pub type DeviceMap = HashMap<DeviceId, Device>;
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Configuration {
     pub api: api::Api,

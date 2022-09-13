@@ -10,7 +10,7 @@ use crate::control::ServerControl;
 use crate::web::api;
 use crate::web::api::server::UnknownDeviceError;
 
-#[derive(Debug, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
 pub struct AlwaysOffResponse {
     always_off: bool,
 }

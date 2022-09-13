@@ -30,7 +30,7 @@ impl JsonSchema for MacAddr {
     }
 }
 
-#[derive(Debug, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Device {
     pub name: String,

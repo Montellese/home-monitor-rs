@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{Files, Web};
 
-#[derive(Clone, Debug, Default, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Api {
     pub files: Files,

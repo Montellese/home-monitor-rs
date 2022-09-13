@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use crate::dom::communication::SharedStateMutex;
 use crate::web::serialization::Device;
 
-#[derive(Debug, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct Status {
     devices: Vec<Device>,
