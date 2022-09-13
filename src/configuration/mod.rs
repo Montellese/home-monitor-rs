@@ -114,24 +114,21 @@ fn check_dependencies(
         // make sure the key of the dependency is a server
         if !servers.contains_key(server_id) {
             return Err(DependencyError::new(format!(
-                "{} is not a configured server",
-                server_id
+                "{server_id} is not a configured server"
             )));
         }
 
         // each server needs at least one dependency
         if dependencies.is_empty() {
             return Err(DependencyError::new(format!(
-                "{} has no dependencies configured",
-                server_id
+                "{server_id} has no dependencies configured"
             )));
         }
 
         // make sure the server is not a dependency of itself
         if dependencies.contains(server_id) {
             return Err(DependencyError::new(format!(
-                "{} cannot depend on itself",
-                server_id
+                "{server_id} cannot depend on itself"
             )));
         }
 
@@ -139,8 +136,7 @@ fn check_dependencies(
         for device_id in dependencies.iter() {
             if !devices.contains_key(device_id) {
                 return Err(DependencyError::new(format!(
-                    "{} is not a configured device",
-                    server_id
+                    "{server_id} is not a configured device"
                 )));
             }
         }

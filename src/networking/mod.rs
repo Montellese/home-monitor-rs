@@ -37,8 +37,7 @@ pub fn get_network_interface(
     match iface {
         Some(iface) => Ok(iface),
         None => Err(networking_error::NetworkingError(format!(
-            "unknown network interface: {}",
-            interface_name
+            "unknown network interface: {interface_name}"
         ))),
     }
 }

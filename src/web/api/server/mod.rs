@@ -43,6 +43,9 @@ pub mod test {
     use super::*;
 
     pub fn get_server_api_endpoint(endpoint: &str, server_id: &DeviceId) -> String {
-        format!("/api/v1/server/{}{}", server_id.to_string(), endpoint)
+        format!(
+            "/api/v1/server/{server_id}{endpoint}",
+            server_id = server_id.to_string()
+        )
     }
 }

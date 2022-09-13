@@ -81,7 +81,7 @@ impl Server {
         };
 
         // configure the "Server" identity
-        match rocket::config::Ident::try_new(format!("{}/{}", name, version)) {
+        match rocket::config::Ident::try_new(format!("{name}/{version}")) {
             Ok(ident) => rocket_config.ident = ident,
             Err(e) => warn!("failed to create custom identitiy for the web API: {}", e),
         };
@@ -110,7 +110,7 @@ impl Server {
 
     pub fn get_thread_name(name: &str) -> String {
         // NOTE: graceful shutdown of tokio runtime depends on the "rocket-worker" prefix.
-        format!("rocket-worker-{}", name)
+        format!("rocket-worker-{name}")
     }
 
     #[cfg(test)]
@@ -243,6 +243,6 @@ pub mod test {
     }
 
     pub fn get_api_endpoint(endpoint: &str) -> String {
-        format!("/api/v1{}", endpoint)
+        format!("/api/v1{endpoint}")
     }
 }

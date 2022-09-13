@@ -24,7 +24,11 @@ impl Ssh2ShutdownServer {
     }
 
     fn ssh2_to_shutdown_error(e: ssh2::Error) -> ShutdownError {
-        ShutdownError::new(format!("[{}] {}", e.code(), e.message()))
+        ShutdownError::new(format!(
+            "[{code}] {message}",
+            code = e.code(),
+            message = e.message()
+        ))
     }
 
     fn handle_shutdown_error<T>(result: Result<T, ssh2::Error>) -> Result<T, ShutdownError> {
@@ -40,7 +44,7 @@ impl ShutdownServer for Ssh2ShutdownServer {
         debug!("creating an SSH session to {} [{}]", self.name, self.ip);
         let tcp = match TcpStream::connect(&self.ip) {
             Ok(s) => s,
-            Err(e) => return Err(ShutdownError::new(format!("{}", e))),
+            Err(e) => return Err(ShutdownError::new(format!("{e}"))),
         };
         let mut session = Self::handle_shutdown_error(Session::new())?;
         session.set_tcp_stream(tcp);

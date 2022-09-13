@@ -42,7 +42,7 @@ impl FastPinger {
     }
 
     fn ip_to_string(ip_addr: &IpAddr) -> String {
-        format!("{}", ip_addr)
+        format!("{ip_addr}")
     }
 }
 
