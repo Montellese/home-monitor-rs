@@ -20,7 +20,7 @@ pub use files::Files;
 pub use network::{Network, Ping};
 pub use web::Web;
 
-pub const LOCATION: &str = "/etc/home-monitor/home-monitor.json";
+pub const LOCATION: &str = "/etc/home-monitor-rs/home-monitor-rs.json";
 
 pub type DeviceMap = HashMap<DeviceId, Device>;
 
