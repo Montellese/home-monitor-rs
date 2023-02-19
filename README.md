@@ -218,6 +218,14 @@ home-monitor-rs --shutdown myserver [-c <path to JSON configuration file>]
 
 To develop on `home-monitor-rs` you need a valid [Rust](https://www.rust-lang.org/) compiler installation. See [Install Rust](https://www.rust-lang.org/tools/install) for detailed instructions.
 
+#### Ubuntu
+
+To build all dependencies of `home-monitor-rs` the following system packages need to be installed:
+
+```
+sudo apt-get install pkg-config libssl-dev
+```
+
 ### Build
 
 To build `home-monitor-rs` use Rust's package manager `cargo` by invoking
