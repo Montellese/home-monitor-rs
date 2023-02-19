@@ -142,15 +142,13 @@ fn run(
         let ping_interval = Duration::from_secs(config.network.ping.interval);
 
         // create the server DOM objects from the parsed configuration
-        let servers: Vec<dom::Server> = configured_servers
-            .iter()
-            .map(|(_, server)| dom::Server::from(server))
-            .collect();
+        let servers: Vec<dom::Server> =
+            configured_servers.values().map(dom::Server::from).collect();
 
         // create the machine DOM objects from the parsed configuration
         let machines: Vec<dom::Machine> = configured_machines
-            .iter()
-            .map(|(_, machine)| dom::Machine::from(machine))
+            .values()
+            .map(dom::Machine::from)
             .collect();
 
         process(args, config, ping_interval, servers, machines)

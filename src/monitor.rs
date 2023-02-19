@@ -217,10 +217,7 @@ impl Monitor {
         Self {
             sender,
             servers,
-            devices: monitored_devices
-                .into_iter()
-                .map(|(_, device)| device)
-                .collect(),
+            devices: monitored_devices.into_values().collect(),
             last_ping,
             ping_interval,
             pinger: mut_pinger,
