@@ -16,6 +16,8 @@ In addition to running `home-monitor-rs` as a service it can also be used to man
   - [How to use](#how-to-use)
     - [Configuration](#configuration)
     - [Systemd Service](#systemd-service)
+    - [Docker](#docker)
+    - [Docker Compose](#docker-compose)
     - [Web / REST API](#web--rest-api)
       - [GET /config](#get-config)
       - [GET /status](#get-status)
@@ -151,6 +153,47 @@ You can control `home-monitor-rs` as a service using systemd's `systemctl` with 
 
 ```
 sudo systemctl [status|start|stop|restart|enable|disable] home-monitor-rs
+```
+
+### Docker
+
+To run `home-monitor-rs` in a Docker container, first build the [`Dockerfile`](Dockerfile) into an image using e.g.
+
+```
+docker build -t home-monitor-rs:latest -f Dockerfile .
+```
+
+To run the built image, use e.g.
+
+```
+docker run --rm -v <PATH TO CONFIG>:/etc/home-monitor-rs/home-monitor-rs.json:ro -p 8000:8000 home-monitor-rs:latest
+```
+Don't forget to replace `<PATH TO CONFIG>` with the path to your valid JSON configuration file.
+
+### Docker Compose
+
+To run the built image using `Docker Compose` use e.g. the following `docker-compose.yml`
+
+```yaml
+---
+
+version: "3.5"
+
+services:
+  home-monitor-rs:
+    container_name: home-monitor-rs
+    build: .
+    volumes:
+      - <PATH TO CONFIG>:/etc/home-monitor-rs/home-monitor-rs.json:ro
+    ports:
+      - "8000:8000"
+```
+Don't forget to replace `<PATH TO CONFIG>` with the path to your valid JSON configuration file.
+
+Then start it using
+
+```
+docker-compose up --detach
 ```
 
 ### Web / REST API
