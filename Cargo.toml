@@ -13,7 +13,7 @@ categories = ["command-line-utilities"]
 [dependencies]
 anyhow = "1.0"
 chrono = { version = "0.4", features = ["std", "clock", "serde"] }
-clap = { version = "3.2", features = ["derive"] }
+clap = { version = "4.1", features = ["derive"] }
 exitcode = "1.1.2"
 fastping-rs = "0.2.3"
 log = "0.4.17"

@@ -45,8 +45,7 @@ struct Opts {
     #[clap(
         short = 's',
         long = "shutdown",
-        multiple_values = true,
-        min_values = 1,
+        num_args = 1..,
         value_name = "SERVER",
         conflicts_with = "wakeup",
         group = "mode"
@@ -57,8 +56,7 @@ struct Opts {
     #[clap(
         short = 'w',
         long = "wakeup",
-        multiple_values = true,
-        min_values = 1,
+        num_args = 1..,
         value_name = "SERVER",
         conflicts_with = "shutdown",
         group = "mode"
