@@ -19,22 +19,22 @@ fastping-rs = "0.2.3"
 log = "0.4.17"
 macaddr = { version = "1.0", features = ["serde_std"] }
 okapi = { version = "0.6.0-alpha-1", features = ["derive_json_schema"] }
-pnet = { version = "0.31.0", features = ["std"] }
+pnet = { version = "0.33.0", features = ["std"] }
 rocket = { version = "0.5.0-rc.2", features = ["json"] }
 rocket_okapi = { version = "0.8.0-rc.2", features = ["swagger", "rapidoc"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 schemars = "0.8"
-signal-hook = "0.3.14"
+signal-hook = "0.3.15"
 simplelog = { version = "0.12.0", default-features = false }
 ssh2 = "0.9"
 temp-dir = "0.1"
-tokio = { version = "1.24", features = ["full"] }
+tokio = { version = "1.25", features = ["full"] }
 wakey = "0.2.2"
 
 [dev-dependencies]
-cargo-deb = "1.32.0"
-mockall = "0.11.2"
+cargo-deb = "1.42.1"
+mockall = "0.11.3"
 rstest = "0.15.0"
 sn_fake_clock = "0.4.14"
 
