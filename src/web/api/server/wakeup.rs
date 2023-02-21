@@ -17,9 +17,7 @@ pub fn put_wakeup(
 
     match control.wakeup.wakeup() {
         Ok(_) => Ok(()),
-        Err(e) => Err(api::Error::from(api::InternalServerError::from(
-            anyhow::Error::from(e),
-        ))),
+        Err(e) => Err(api::Error::from(api::InternalServerError::from(e))),
     }
 }
 
@@ -29,6 +27,7 @@ mod test {
     use std::net::IpAddr;
     use std::sync::Arc;
 
+    use anyhow;
     use rocket::http::Status;
     use rocket::log::LogLevel;
     use rstest::*;
@@ -94,7 +93,7 @@ mod test {
             .wakeup
             .expect_wakeup()
             .once()
-            .return_once(|| Err(Error::new(ErrorKind::AddrInUse, "")));
+            .return_once(|| Err(anyhow::Error::from(Error::new(ErrorKind::AddrInUse, ""))));
 
         // TESTING
         let client = get_client(
