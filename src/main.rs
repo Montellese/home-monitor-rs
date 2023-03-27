@@ -137,6 +137,17 @@ fn run(
         }
         exitcode
     } else {
+        // make sure machines are configured
+        if configured_machines.is_empty() {
+            error!("configuration doesn't contain any machines to monitor");
+            std::process::exit(exitcode::CONFIG);
+        }
+
+        // make sure dependencies are configured
+        if config.dependencies.0.is_empty() {
+            error!("no dependencies configured");
+            std::process::exit(exitcode::CONFIG);
+        }
         let ping_interval = Duration::from_secs(config.network.ping.interval);
 
         // create the server DOM objects from the parsed configuration
@@ -352,10 +363,6 @@ fn main() {
         std::process::exit(exitcode::CONFIG);
     }
     let configured_machines = configuration::get_machines(&config.devices);
-    if configured_machines.is_empty() {
-        error!("configuration doesn't contain any machines to monitor");
-        std::process::exit(exitcode::CONFIG);
-    }
 
     {
         // log the always on / off files
@@ -393,12 +400,14 @@ fn main() {
     }
 
     // log the details of the configured machines
-    info!("machines ({}):", configured_machines.len());
-    for (_, machine) in configured_machines.iter() {
-        info!(
-            "  {}: {} ({}s)",
-            machine.name, machine.ip, machine.last_seen_timeout
-        );
+    if !configured_machines.is_empty() {
+        info!("machines ({}):", configured_machines.len());
+        for (_, machine) in configured_machines.iter() {
+            info!(
+                "  {}: {} ({}s)",
+                machine.name, machine.ip, machine.last_seen_timeout
+            );
+        }
     }
 
     info!("");

@@ -95,9 +95,7 @@ fn check_dependencies(
     dependencies: &Dependencies,
 ) -> Result<(), DependencyError> {
     if dependencies.0.is_empty() {
-        return Err(DependencyError::new(
-            "no dependencies configured".to_string(),
-        ));
+        return Ok(());
     }
 
     let servers = get_servers(devices);
@@ -318,7 +316,7 @@ mod tests {
     }
 
     #[rstest]
-    fn test_check_dependencies_fails_if_no_dependencies_configured(
+    fn test_check_dependencies_succeeds_if_no_dependencies_configured(
         server: Server,
         machine: Machine,
     ) {
@@ -328,7 +326,7 @@ mod tests {
 
         let dependencies = Dependencies(HashMap::<DeviceId, Vec<DeviceId>>::new());
 
-        assert!(check_dependencies(&devices, &dependencies).is_err());
+        assert!(check_dependencies(&devices, &dependencies).is_ok());
     }
 
     #[rstest]
