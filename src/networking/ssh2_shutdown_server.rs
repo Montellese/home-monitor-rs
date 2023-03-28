@@ -125,6 +125,9 @@ impl ShutdownServer for Ssh2ShutdownServer {
         let mut channel = Self::handle_shutdown_error(session.channel_session())?;
         Self::handle_shutdown_error(channel.exec("shutdown -h now"))?;
 
+        Self::handle_shutdown_error(channel.send_eof())?;
+        Self::handle_shutdown_error(channel.wait_eof())?;
+        Self::handle_shutdown_error(channel.close())?;
         Self::handle_shutdown_error(channel.wait_close())
     }
 }
