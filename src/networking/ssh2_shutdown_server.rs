@@ -20,15 +20,18 @@ enum Authentication {
 pub struct Ssh2ShutdownServer {
     name: String,
     ip: String,
+    port: u16,
     username: String,
     authentication: Authentication,
 }
 
 impl Ssh2ShutdownServer {
     pub fn new(server: &dom::Server) -> Self {
-        let authentication = match &server.authentication {
-            dom::device::Authentication::Password(auth) => Authentication::Password(auth.clone()),
-            dom::device::Authentication::PrivateKey(auth) => {
+        let authentication = match &server.ssh.authentication {
+            dom::device::SshAuthentication::Password(auth) => {
+                Authentication::Password(auth.clone())
+            }
+            dom::device::SshAuthentication::PrivateKey(auth) => {
                 Authentication::PrivateKey(PrivateKeyAuthentication {
                     file: auth.file.clone(),
                     passphrase: auth.passphrase.clone(),
@@ -39,7 +42,8 @@ impl Ssh2ShutdownServer {
         Self {
             name: server.machine.name.to_string(),
             ip: server.machine.ip.to_string(),
-            username: server.username.to_string(),
+            port: server.ssh.port.into(),
+            username: server.ssh.username.to_string(),
             authentication,
         }
     }
@@ -61,7 +65,7 @@ impl Ssh2ShutdownServer {
 
     fn connect(&self) -> Result<Session, ShutdownError> {
         debug!("creating an SSH session to {} [{}]", self.name, self.ip);
-        let tcp = match TcpStream::connect(format!("{}:22", &self.ip)) {
+        let tcp = match TcpStream::connect(format!("{}:{}", &self.ip, self.port)) {
             Ok(s) => s,
             Err(e) => return Err(ShutdownError::new(format!("{e}"))),
         };

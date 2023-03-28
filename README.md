@@ -85,9 +85,25 @@ OPTIONS:
         "myserver": {
             "name": "My Server",
             "mac": "aa:bb:cc:dd:ee:ff",
+            "ip": "192.168.1.1",
+            "ssh": {
+                "port": 22,
+                "username": "foo",
+                "password": "bar"
+            },
+            "timeout": 60
+        },
+        "myserver2": {
+            "name": "My Server 2",
+            "mac": "ff:ee:dd:cc:bb:aa",
             "ip": "192.168.1.255",
-            "username": "foo",
-            "password": "bar",
+            "ssh": {
+                "username": "lorem",
+                "privateKey": {
+                    "file": "~/.ssh/id_rsa",
+                    "passphrase": "ipsum"
+                }
+            },
             "timeout": 60
         },
         "mymachine": {
@@ -99,6 +115,9 @@ OPTIONS:
     "dependencies": {
         "myserver": {
             "mymachine"
+        },
+        "myserver2": {
+            "myserver"
         }
     }
 }
@@ -106,7 +125,7 @@ OPTIONS:
 
 The `devices` object can contain as many "devices" as necessary and is a combination of "servers" and "machines". Every configured device will be monitored to determine the expected status of the server depending on the device to be online (through the `dependencies` object). A server can also depend on one or more other servers.
 
-Any device which should be controlled by `home-monitor-rs` must be configured with a `mac`, `username` and `password` whereas machines which are just monitored don't need these properties.
+Any device which should be controlled by `home-monitor-rs` must be configured with a `mac` and an `ssh` property containing at least a `username` and `password` or `privateKey` properties whereas machines which are just monitored don't need these properties.
 
 The `files.root` configuration option in the `api` section specifies the root directory for the file based API. `home-monitor-rs` automatically creates a new sub-directory in the `root` directory for every server to be controlled. Within that subdirectory two files can be created:
 * if the `alwaysoff` file is present it forces `home-monitor-rs` to shut the configured server down independent of the status of the machines.

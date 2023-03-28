@@ -96,14 +96,35 @@ impl fmt::Display for Machine {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct SshPort(pub u16);
+
+impl Default for SshPort {
+    fn default() -> Self {
+        SshPort(22)
+    }
+}
+
+impl From<&configuration::SshPort> for SshPort {
+    fn from(ssh_port: &configuration::SshPort) -> Self {
+        Self(ssh_port.0)
+    }
+}
+
+impl From<SshPort> for u16 {
+    fn from(port: SshPort) -> Self {
+        port.0
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct PrivateKeyAuthentication {
+pub struct SshPrivateKeyAuthentication {
     pub file: String,
     pub passphrase: String,
 }
 
-impl From<&configuration::PrivateKeyAuthentication> for PrivateKeyAuthentication {
-    fn from(pk_auth: &configuration::PrivateKeyAuthentication) -> Self {
+impl From<&configuration::SshPrivateKeyAuthentication> for SshPrivateKeyAuthentication {
+    fn from(pk_auth: &configuration::SshPrivateKeyAuthentication) -> Self {
         Self {
             file: pk_auth.file.clone(),
             passphrase: pk_auth.passphrase.clone(),
@@ -112,20 +133,38 @@ impl From<&configuration::PrivateKeyAuthentication> for PrivateKeyAuthentication
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Authentication {
+pub enum SshAuthentication {
     Password(String),
-    PrivateKey(PrivateKeyAuthentication),
+    PrivateKey(SshPrivateKeyAuthentication),
 }
 
-impl From<&configuration::Authentication> for Authentication {
-    fn from(auth: &configuration::Authentication) -> Self {
+impl From<&configuration::SshAuthentication> for SshAuthentication {
+    fn from(auth: &configuration::SshAuthentication) -> Self {
         match auth {
-            configuration::Authentication::Password(password_auth) => {
-                Authentication::Password(password_auth.clone())
+            configuration::SshAuthentication::Password(password_auth) => {
+                SshAuthentication::Password(password_auth.clone())
             }
-            configuration::Authentication::PrivateKey(pk_auth) => {
-                Authentication::PrivateKey(PrivateKeyAuthentication::from(pk_auth))
+            configuration::SshAuthentication::PrivateKey(pk_auth) => {
+                SshAuthentication::PrivateKey(SshPrivateKeyAuthentication::from(pk_auth))
             }
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Ssh {
+    pub port: SshPort,
+
+    pub username: String,
+    pub authentication: SshAuthentication,
+}
+
+impl From<&configuration::Ssh> for Ssh {
+    fn from(ssh: &configuration::Ssh) -> Self {
+        Self {
+            port: SshPort::from(&ssh.port),
+            username: ssh.username.clone(),
+            authentication: SshAuthentication::from(&ssh.authentication),
         }
     }
 }
@@ -135,8 +174,7 @@ pub struct Server {
     pub machine: Machine,
 
     pub mac: MacAddr,
-    pub username: String,
-    pub authentication: Authentication,
+    pub ssh: Ssh,
 }
 
 impl Server {
@@ -147,14 +185,12 @@ impl Server {
         ip: IpAddr,
         last_seen_timeout: u64,
         mac: MacAddr,
-        username: &str,
-        authentication: Authentication,
+        ssh: Ssh,
     ) -> Self {
         Self {
             machine: Machine::new(id, name, ip, last_seen_timeout),
             mac,
-            username: username.to_string(),
-            authentication,
+            ssh,
         }
     }
 }
@@ -164,15 +200,14 @@ impl From<&configuration::Server> for Server {
         Self {
             machine: Machine::from(&server.machine),
             mac: server.mac,
-            username: server.username.clone(),
-            authentication: Authentication::from(&server.authentication),
+            ssh: Ssh::from(&server.ssh),
         }
     }
 }
 
 impl fmt::Display for Server {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}@{}", self.username, self.machine)
+        write!(f, "{}@{}", self.ssh.username, self.machine)
     }
 }
 
@@ -260,8 +295,9 @@ pub mod test {
     pub static SERVER_MAC: &str = "aa:bb:cc:dd:ee:ff";
     pub static SERVER_IP: &str = "10.0.0.1";
     pub const SERVER_LAST_SEEN_TIMEOUT: u64 = 60;
-    pub static SERVER_USERNAME: &str = "username";
-    pub static SERVER_PASSWORD: &str = "password";
+    pub static SERVER_SSH_PORT: SshPort = SshPort(2222);
+    pub static SERVER_SSH_USERNAME: &str = "username";
+    pub static SERVER_SSH_PASSWORD: &str = "password";
 
     pub static MACHINE_ID: &str = "testmachine";
     pub static MACHINE_NAME: &str = "Test Machine";
@@ -291,8 +327,11 @@ pub mod test {
             server_ip(),
             SERVER_LAST_SEEN_TIMEOUT,
             server_mac(),
-            SERVER_USERNAME,
-            Authentication::Password(SERVER_PASSWORD.to_string()),
+            Ssh {
+                port: SERVER_SSH_PORT,
+                username: SERVER_SSH_USERNAME.to_string(),
+                authentication: SshAuthentication::Password(SERVER_SSH_PASSWORD.to_string()),
+            },
         )
     }
 

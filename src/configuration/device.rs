@@ -38,9 +38,24 @@ pub struct Machine {
     pub last_seen_timeout: u64,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
+pub struct SshPort(pub u16);
+
+impl Default for SshPort {
+    fn default() -> Self {
+        SshPort(22)
+    }
+}
+
+impl From<SshPort> for u16 {
+    fn from(port: SshPort) -> Self {
+        port.0
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub struct PrivateKeyAuthentication {
+pub struct SshPrivateKeyAuthentication {
     pub file: String,
     #[serde(default)]
     pub passphrase: String,
@@ -48,9 +63,20 @@ pub struct PrivateKeyAuthentication {
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
-pub enum Authentication {
+pub enum SshAuthentication {
     Password(String),
-    PrivateKey(PrivateKeyAuthentication),
+    PrivateKey(SshPrivateKeyAuthentication),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct Ssh {
+    #[serde(default)]
+    pub port: SshPort,
+
+    pub username: String,
+    #[serde(flatten)]
+    pub authentication: SshAuthentication,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
@@ -60,10 +86,7 @@ pub struct Server {
     pub machine: Machine,
 
     pub mac: MacAddr,
-    pub username: String,
-
-    #[serde(flatten)]
-    pub authentication: Authentication,
+    pub ssh: Ssh,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]

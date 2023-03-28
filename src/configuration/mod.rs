@@ -15,7 +15,9 @@ mod web;
 
 pub use api::Api;
 pub use dependencies::{Dependencies, DependencyError};
-pub use device::{Authentication, Device, DeviceId, Machine, PrivateKeyAuthentication, Server};
+pub use device::{
+    Device, DeviceId, Machine, Server, Ssh, SshAuthentication, SshPort, SshPrivateKeyAuthentication,
+};
 pub use files::Files;
 pub use network::{Network, Ping};
 pub use web::Web;
@@ -156,8 +158,9 @@ mod tests {
     static SERVER_MAC: &str = "aa:bb:cc:dd:ee:ff";
     static SERVER_IP: &str = "10.0.0.1";
     const SERVER_LAST_SEEN_TIMEOUT: u64 = 60;
-    static SERVER_USERNAME: &str = "username";
-    static SERVER_PASSWORD: &str = "password";
+    const SERVER_SSH_PORT: u16 = 2222;
+    static SERVER_SSH_USERNAME: &str = "username";
+    static SERVER_SSH_PASSWORD: &str = "password";
 
     static MACHINE_ID: &str = "testmachine";
     static MACHINE_NAME: &str = "Test Machine";
@@ -179,8 +182,11 @@ mod tests {
                 last_seen_timeout: SERVER_LAST_SEEN_TIMEOUT,
             },
             mac: MacAddr::V6(SERVER_MAC.parse().unwrap()),
-            username: SERVER_USERNAME.to_string(),
-            authentication: Authentication::Password(SERVER_PASSWORD.to_string()),
+            ssh: Ssh {
+                port: SshPort(SERVER_SSH_PORT),
+                username: SERVER_SSH_USERNAME.to_string(),
+                authentication: SshAuthentication::Password(SERVER_SSH_PASSWORD.to_string()),
+            },
         }
     }
 
@@ -233,18 +239,23 @@ mod tests {
                     "mac": "aa:bb:cc:dd:ee:ff",
                     "ip": "192.168.1.1",
                     "timeout": 60,
-                    "username": "foo",
-                    "password": "bar"
+                    "ssh": {
+                        "port": 2222,
+                        "username": "foo",
+                        "password": "bar"
+                    }
                 },
                 "server2": {
                     "name": "Server 2",
                     "mac": "ff:ee:dd:bb:cc:aa",
                     "ip": "192.168.1.129",
                     "timeout": 60,
-                    "username": "admin",
-                    "privateKey": {
-                        "file": "~/.ssh/id_rsa",
-                        "passphrase": "lorem"
+                    "ssh": {
+                        "username": "admin",
+                        "privateKey": {
+                            "file": "~/.ssh/id_rsa",
+                            "passphrase": "lorem"
+                        }
                     }
                 },
                 "mymachine": {

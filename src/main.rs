@@ -391,7 +391,7 @@ fn main() {
     for (_, server) in configured_servers.iter() {
         info!(
             "  {}@{}: {} [{}] ({}s)",
-            server.username,
+            server.ssh.username,
             server.machine.name,
             server.machine.ip,
             server.mac,

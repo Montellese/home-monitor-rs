@@ -153,9 +153,9 @@ pub mod test {
 
     #[fixture]
     pub fn config(server: dom::Server, machine: dom::Machine) -> Configuration {
-        let password = match &server.authentication {
-            dom::device::Authentication::Password(pw) => pw,
-            dom::device::Authentication::PrivateKey(pk) => &pk.passphrase,
+        let password = match &server.ssh.authentication {
+            dom::device::SshAuthentication::Password(pw) => pw,
+            dom::device::SshAuthentication::PrivateKey(pk) => &pk.passphrase,
         };
 
         let config_json = json!({
@@ -181,8 +181,11 @@ pub mod test {
                     "mac": server.mac,
                     "ip": server.machine.ip,
                     "timeout": server.machine.last_seen_timeout,
-                    "username": server.username,
-                    "password": password
+                    "ssh": {
+                        "port": Into::<u16>::into(server.ssh.port),
+                        "username": server.ssh.username,
+                        "password": password
+                    }
                 },
                 machine.id.to_string(): {
                     "name": machine.name,
