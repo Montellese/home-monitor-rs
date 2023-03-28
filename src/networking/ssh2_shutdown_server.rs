@@ -61,7 +61,7 @@ impl Ssh2ShutdownServer {
 
     fn connect(&self) -> Result<Session, ShutdownError> {
         debug!("creating an SSH session to {} [{}]", self.name, self.ip);
-        let tcp = match TcpStream::connect(&self.ip) {
+        let tcp = match TcpStream::connect(format!("{}:22", &self.ip)) {
             Ok(s) => s,
             Err(e) => return Err(ShutdownError::new(format!("{e}"))),
         };
