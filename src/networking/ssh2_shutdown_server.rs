@@ -1,4 +1,5 @@
 use std::net::TcpStream;
+use std::path::Path;
 
 use log::debug;
 use ssh2::Session;
@@ -6,20 +7,40 @@ use ssh2::Session;
 use super::super::dom;
 use super::{ShutdownError, ShutdownServer};
 
+struct PrivateKeyAuthentication {
+    file: String,
+    passphrase: String,
+}
+
+enum Authentication {
+    Password(String),
+    PrivateKey(PrivateKeyAuthentication),
+}
+
 pub struct Ssh2ShutdownServer {
     name: String,
     ip: String,
     username: String,
-    password: String,
+    authentication: Authentication,
 }
 
 impl Ssh2ShutdownServer {
     pub fn new(server: &dom::Server) -> Self {
+        let authentication = match &server.authentication {
+            dom::device::Authentication::Password(auth) => Authentication::Password(auth.clone()),
+            dom::device::Authentication::PrivateKey(auth) => {
+                Authentication::PrivateKey(PrivateKeyAuthentication {
+                    file: auth.file.clone(),
+                    passphrase: auth.passphrase.clone(),
+                })
+            }
+        };
+
         Self {
             name: server.machine.name.to_string(),
             ip: server.machine.ip.to_string(),
             username: server.username.to_string(),
-            password: server.password.to_string(),
+            authentication,
         }
     }
 
@@ -37,10 +58,8 @@ impl Ssh2ShutdownServer {
             Err(e) => Err(Self::ssh2_to_shutdown_error(e)),
         }
     }
-}
 
-impl ShutdownServer for Ssh2ShutdownServer {
-    fn shutdown(&self) -> Result<(), ShutdownError> {
+    fn connect(&self) -> Result<Session, ShutdownError> {
         debug!("creating an SSH session to {} [{}]", self.name, self.ip);
         let tcp = match TcpStream::connect(&self.ip) {
             Ok(s) => s,
@@ -50,11 +69,57 @@ impl ShutdownServer for Ssh2ShutdownServer {
         session.set_tcp_stream(tcp);
         Self::handle_shutdown_error(session.handshake())?;
 
-        debug!(
-            "authenticating SSH session to {} for {}",
-            self.name, self.username
-        );
-        Self::handle_shutdown_error(session.userauth_password(&self.username, &self.password))?;
+        self.authenticate(&session)?;
+
+        Ok(session)
+    }
+
+    fn authenticate(&self, session: &Session) -> Result<(), ShutdownError> {
+        match &self.authentication {
+            Authentication::Password(password) => {
+                debug!(
+                    "authenticating SSH session to {} for {} using password",
+                    self.name, self.username
+                );
+                Self::handle_shutdown_error(session.userauth_password(&self.username, password))?;
+            }
+            Authentication::PrivateKey(pk) => {
+                debug!(
+                    "authenticating SSH session to {} for {} using private key",
+                    self.name, self.username
+                );
+
+                // make sure the private key exists
+                let pk_path = Path::new(&pk.file);
+                match pk_path.try_exists() {
+                    Ok(exists) => {
+                        if !exists {
+                            return Err(ShutdownError::new(
+                                format!("missing private key at {} to authenticate SSH session to {} for {}",
+                                    pk.file, self.name, self.username)));
+                        }
+                    },
+                    Err(err) => return Err(ShutdownError::new(
+                        format!("error loading private key from {}to authenticate SSH session to {} for {}: {}",
+                            pk.file, self.name, self.username, err))),
+                }
+
+                Self::handle_shutdown_error(session.userauth_pubkey_file(
+                    &self.username,
+                    Option::None,
+                    pk_path,
+                    Some(&pk.passphrase),
+                ))?;
+            }
+        }
+
+        Ok(())
+    }
+}
+
+impl ShutdownServer for Ssh2ShutdownServer {
+    fn shutdown(&self) -> Result<(), ShutdownError> {
+        let session = self.connect()?;
 
         debug!("executing \"shutdown -h now\" on {}", self.name);
         let mut channel = Self::handle_shutdown_error(session.channel_session())?;

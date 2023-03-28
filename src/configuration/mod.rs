@@ -15,7 +15,7 @@ mod web;
 
 pub use api::Api;
 pub use dependencies::{Dependencies, DependencyError};
-pub use device::{Device, DeviceId, Machine, Server};
+pub use device::{Authentication, Device, DeviceId, Machine, PrivateKeyAuthentication, Server};
 pub use files::Files;
 pub use network::{Network, Ping};
 pub use web::Web;
@@ -180,7 +180,7 @@ mod tests {
             },
             mac: MacAddr::V6(SERVER_MAC.parse().unwrap()),
             username: SERVER_USERNAME.to_string(),
-            password: SERVER_PASSWORD.to_string(),
+            authentication: Authentication::Password(SERVER_PASSWORD.to_string()),
         }
     }
 
@@ -242,7 +242,10 @@ mod tests {
                     "ip": "192.168.1.129",
                     "timeout": 60,
                     "username": "admin",
-                    "password": "1234"
+                    "privateKey": {
+                        "file": "~/.ssh/id_rsa",
+                        "passphrase": "lorem"
+                    }
                 },
                 "mymachine": {
                     "name": "My Machine",

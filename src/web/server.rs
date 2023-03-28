@@ -153,6 +153,11 @@ pub mod test {
 
     #[fixture]
     pub fn config(server: dom::Server, machine: dom::Machine) -> Configuration {
+        let password = match &server.authentication {
+            dom::device::Authentication::Password(pw) => pw,
+            dom::device::Authentication::PrivateKey(pk) => &pk.passphrase,
+        };
+
         let config_json = json!({
             "network": {
                 "interface": "eth0",
@@ -177,7 +182,7 @@ pub mod test {
                     "ip": server.machine.ip,
                     "timeout": server.machine.last_seen_timeout,
                     "username": server.username,
-                    "password": server.password
+                    "password": password
                 },
                 machine.id.to_string(): {
                     "name": machine.name,

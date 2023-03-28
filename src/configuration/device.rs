@@ -40,13 +40,30 @@ pub struct Machine {
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
+pub struct PrivateKeyAuthentication {
+    pub file: String,
+    #[serde(default)]
+    pub passphrase: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub enum Authentication {
+    Password(String),
+    PrivateKey(PrivateKeyAuthentication),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct Server {
     #[serde(flatten)]
     pub machine: Machine,
 
     pub mac: MacAddr,
     pub username: String,
-    pub password: String,
+
+    #[serde(flatten)]
+    pub authentication: Authentication,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]

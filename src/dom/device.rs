@@ -97,12 +97,46 @@ impl fmt::Display for Machine {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PrivateKeyAuthentication {
+    pub file: String,
+    pub passphrase: String,
+}
+
+impl From<&configuration::PrivateKeyAuthentication> for PrivateKeyAuthentication {
+    fn from(pk_auth: &configuration::PrivateKeyAuthentication) -> Self {
+        Self {
+            file: pk_auth.file.clone(),
+            passphrase: pk_auth.passphrase.clone(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Authentication {
+    Password(String),
+    PrivateKey(PrivateKeyAuthentication),
+}
+
+impl From<&configuration::Authentication> for Authentication {
+    fn from(auth: &configuration::Authentication) -> Self {
+        match auth {
+            configuration::Authentication::Password(password_auth) => {
+                Authentication::Password(password_auth.clone())
+            }
+            configuration::Authentication::PrivateKey(pk_auth) => {
+                Authentication::PrivateKey(PrivateKeyAuthentication::from(pk_auth))
+            }
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Server {
     pub machine: Machine,
 
     pub mac: MacAddr,
     pub username: String,
-    pub password: String,
+    pub authentication: Authentication,
 }
 
 impl Server {
@@ -114,13 +148,13 @@ impl Server {
         last_seen_timeout: u64,
         mac: MacAddr,
         username: &str,
-        password: &str,
+        authentication: Authentication,
     ) -> Self {
         Self {
             machine: Machine::new(id, name, ip, last_seen_timeout),
             mac,
             username: username.to_string(),
-            password: password.to_string(),
+            authentication,
         }
     }
 }
@@ -131,7 +165,7 @@ impl From<&configuration::Server> for Server {
             machine: Machine::from(&server.machine),
             mac: server.mac,
             username: server.username.clone(),
-            password: server.password.clone(),
+            authentication: Authentication::from(&server.authentication),
         }
     }
 }
@@ -258,7 +292,7 @@ pub mod test {
             SERVER_LAST_SEEN_TIMEOUT,
             server_mac(),
             SERVER_USERNAME,
-            SERVER_PASSWORD,
+            Authentication::Password(SERVER_PASSWORD.to_string()),
         )
     }
 
