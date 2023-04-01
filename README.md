@@ -43,21 +43,16 @@ In addition to running `home-monitor-rs` as a service it can also be used to man
 `home-monitor-rs` supports the following options / arguments:
 
 ```
-USAGE:
-    home-monitor-rs [FLAGS] [OPTIONS]
+Usage: home-monitor-rs [OPTIONS]
 
-FLAGS:
-    -d, --debug       
-    -h, --help        Prints help information
-    -s, --shutdown    
-    -v, --verbose     
-    -V, --version     Prints version information
-    -w, --wakeup      
-
-OPTIONS:
-    -c, --config <FILE>           Path to the JSON configuration file [default: /etc/home-monitor/home-monitor.json]
-    -s, --shutdown <SERVER>...    Shut down the specified server(s)
-    -w, --wakeup <SERVER>...      Wake up the specified server(s)
+Options:
+  -c, --config <FILE>            [default: /etc/home-monitor-rs/home-monitor-rs.json]
+  -d, --debug
+  -v, --verbose
+  -s, --shutdown <SERVER>...
+  -w, --wakeup <SERVER>...
+  -h, --help                     Print help
+  -V, --version                  Print version
 ```
 
 ### Configuration
