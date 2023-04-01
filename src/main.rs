@@ -62,6 +62,10 @@ struct Opts {
         group = "mode"
     )]
     wakeup: Vec<String>,
+
+enum Mode {
+    Wakeup,
+    Shutdown,
 }
 
 fn run(
@@ -70,71 +74,69 @@ fn run(
     configured_servers: HashMap<configuration::DeviceId, configuration::Server>,
     configured_machines: HashMap<configuration::DeviceId, configuration::Machine>,
 ) -> exitcode::ExitCode {
-    // check if a manual option (wakeup / shutdown) has been provided
-    if !args.wakeup.is_empty() {
+    // check if a manual option has been provided
+    if !args.wakeup.is_empty() || !args.shutdown.is_empty() {
+        let mode: Mode;
+        let servers: &Vec<String>;
+        if !args.wakeup.is_empty() {
+            mode = Mode::Wakeup;
+            servers = &args.wakeup;
+        } else {
+            mode = Mode::Shutdown;
+            servers = &args.shutdown;
+        }
+
         // make sure all provided servers are also configured
-        if !args
-            .wakeup
+        if !servers
             .iter()
             .all(|server_id| configured_servers.contains_key(&server_id.parse().unwrap()))
         {
-            error!("cannot wake up unconfigured server(s)");
+            error!("unconfigured server(s) provided");
             return exitcode::USAGE;
         }
 
-        // wake up all provided servers
+        // process provided servers
         let mut exitcode = exitcode::OK;
-        for server_id in args.wakeup {
+        for server_id in servers {
             let configured_server = configured_servers.get(&server_id.parse().unwrap()).unwrap();
             let server = dom::Server::from(configured_server);
 
-            info!("waking up {} ({})...", server.machine.name, server_id);
-            let wakeup_server = control::Factory::create_wakeup_server(&server);
-            match wakeup_server.wakeup() {
-                Err(_) => {
-                    error!("failed to wake up {} ({})", server.machine.name, server_id);
-                    exitcode = exitcode::UNAVAILABLE;
+            match mode {
+                Mode::Wakeup => {
+                    info!("waking up {} ({})...", server.machine.name, server_id);
+                    let wakeup_server = control::Factory::create_wakeup_server(&server);
+                    match wakeup_server.wakeup() {
+                        Err(_) => {
+                            error!("failed to wake up {} ({})", server.machine.name, server_id);
+                            exitcode = exitcode::UNAVAILABLE;
+                        }
+                        Ok(_) => info!(
+                            "{} ({}) successfully woken up",
+                            server.machine.name, server_id
+                        ),
+                    };
                 }
-                Ok(_) => info!(
-                    "{} ({}) successfully woken up",
-                    server.machine.name, server_id
-                ),
-            };
-        }
-        exitcode
-    } else if !args.shutdown.is_empty() {
-        // make sure all provided servers are also configured
-        if !args
-            .shutdown
-            .iter()
-            .all(|server_id| configured_servers.contains_key(&server_id.parse().unwrap()))
-        {
-            error!("cannot shut down unconfigured server(s)");
-            return exitcode::USAGE;
+
+                Mode::Shutdown => {
+                    info!("shutting down {} ({})...", server.machine.name, server_id);
+                    let shutdown_server = control::Factory::create_shutdown_server(&server);
+                    match shutdown_server.shutdown() {
+                        Err(e) => {
+                            error!(
+                                "failed to shut down {} ({}): {}",
+                                server.machine.name, server_id, e
+                            );
+                            exitcode = exitcode::UNAVAILABLE;
+                        }
+                        Ok(_) => info!(
+                            "{} ({}) successfully shut down",
+                            server.machine.name, server_id
+                        ),
+                    };
+                }
+            }
         }
 
-        // shut down all provided servers
-        let mut exitcode = exitcode::OK;
-        for server_id in args.shutdown {
-            let configured_server = configured_servers.get(&server_id.parse().unwrap()).unwrap();
-            let server = dom::Server::from(configured_server);
-
-            info!("shutting down {} ({})...", server.machine.name, server_id);
-            let shutdown_server = control::Factory::create_shutdown_server(&server);
-            match shutdown_server.shutdown() {
-                Err(e) => {
-                    error!(
-                        "failed to shut down {} ({}): {}",
-                        server.machine.name, server_id, e
-                    );
-                    exitcode = exitcode::UNAVAILABLE;
-                }
-                Ok(_) => info!(
-                    "{} ({}) successfully shut down",
-                    server.machine.name, server_id
-                ),
-            };
-        }
         exitcode
     } else {
         // make sure machines are configured
