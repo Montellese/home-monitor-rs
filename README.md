@@ -31,6 +31,7 @@ In addition to running `home-monitor-rs` as a service it can also be used to man
     - [Command Line Tool](#command-line-tool)
       - [Turn server(s) on](#turn-servers-on)
       - [Shut server(s) down](#shut-servers-down)
+      - [Wait for server(s) to be online](#wait-for-servers-to-be-online)
   - [How to develop](#how-to-develop)
     - [Requirements](#requirements)
       - [Ubuntu](#ubuntu)
@@ -51,6 +52,7 @@ Options:
   -v, --verbose
   -s, --shutdown <SERVER>...
   -w, --wakeup <SERVER>...
+  -n, --wait-online <SERVER>...
   -h, --help                     Print help
   -V, --version                  Print version
 ```
@@ -225,6 +227,14 @@ To shut one or more configured servers down use
 
 ```
 home-monitor-rs --shutdown myserver [-c <path to JSON configuration file>]
+```
+
+#### Wait for server(s) to be online
+
+To wait for one or more configured servers to be online use
+
+```
+home-monitor-rs --wait-online myserver [-c <path to JSON configuration file>]
 ```
 
 ## How to develop

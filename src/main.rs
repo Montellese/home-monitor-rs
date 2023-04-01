@@ -4,8 +4,10 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use clap::Parser;
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use simplelog::{LevelFilter, SimpleLogger};
+
+use crate::networking::{PortChecker, TcpPortChecker};
 
 mod configuration;
 mod control;
@@ -47,7 +49,7 @@ struct Opts {
         long = "shutdown",
         num_args = 1..,
         value_name = "SERVER",
-        conflicts_with = "wakeup",
+        conflicts_with_all = ["wakeup", "wait_online"],
         group = "mode"
     )]
     shutdown: Vec<String>,
@@ -58,14 +60,27 @@ struct Opts {
         long = "wakeup",
         num_args = 1..,
         value_name = "SERVER",
-        conflicts_with = "shutdown",
+        conflicts_with_all = ["shutdown", "wait_online"],
         group = "mode"
     )]
     wakeup: Vec<String>,
 
+    // Wait until the specified server(s) is/are online
+    #[clap(
+        short = 'n',
+        long = "wait-online",
+        num_args = 1..,
+        value_name = "SERVER",
+        conflicts_with_all = ["shutdown", "wakeup"],
+        group = "mode"
+    )]
+    wait_online: Vec<String>,
+}
+
 enum Mode {
     Wakeup,
     Shutdown,
+    WaitOnline,
 }
 
 fn run(
@@ -75,15 +90,18 @@ fn run(
     configured_machines: HashMap<configuration::DeviceId, configuration::Machine>,
 ) -> exitcode::ExitCode {
     // check if a manual option has been provided
-    if !args.wakeup.is_empty() || !args.shutdown.is_empty() {
+    if !args.wakeup.is_empty() || !args.shutdown.is_empty() || !args.wait_online.is_empty() {
         let mode: Mode;
         let servers: &Vec<String>;
         if !args.wakeup.is_empty() {
             mode = Mode::Wakeup;
             servers = &args.wakeup;
-        } else {
+        } else if !args.shutdown.is_empty() {
             mode = Mode::Shutdown;
             servers = &args.shutdown;
+        } else {
+            mode = Mode::WaitOnline;
+            servers = &args.wait_online;
         }
 
         // make sure all provided servers are also configured
@@ -133,6 +151,45 @@ fn run(
                             server.machine.name, server_id
                         ),
                     };
+                }
+
+                Mode::WaitOnline => {
+                    info!(
+                        "waiting for {} ({}) to be online...",
+                        server.machine.name, server_id
+                    );
+
+                    let timeout = server.machine.last_seen_timeout;
+                    let tcp_port_checker = TcpPortChecker::new(
+                        server.machine.ip,
+                        server.ssh.port.into(),
+                        Duration::from_secs(1),
+                    );
+
+                    exitcode = exitcode::UNAVAILABLE;
+                    for secs in 0..timeout {
+                        debug!(
+                            "checking TCP port {} on {} ({})",
+                            Into::<u16>::into(server.ssh.port),
+                            server.machine.name,
+                            server_id
+                        );
+                        if tcp_port_checker.check() {
+                            info!(
+                                "{} ({}) is online after {} seconds",
+                                server.machine.name, server_id, secs
+                            );
+                            exitcode = exitcode::OK;
+                            break;
+                        }
+                    }
+
+                    if exitcode == exitcode::UNAVAILABLE {
+                        warn!(
+                            "{} ({}) is not online after {} seconds",
+                            server.machine.name, server_id, timeout
+                        );
+                    }
                 }
             }
         }
