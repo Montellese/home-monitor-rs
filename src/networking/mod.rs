@@ -3,9 +3,11 @@ use pnet::datalink::{interfaces, NetworkInterface};
 mod fast_pinger;
 mod networking_error;
 mod pinger;
+mod port_checker;
 mod shutdown_error;
 mod shutdown_server;
 mod ssh2_shutdown_server;
+mod tcp_port_checker;
 mod wake_on_lan_server;
 mod wakeup_server;
 
@@ -14,11 +16,13 @@ pub use networking_error::NetworkingError;
 #[cfg(test)]
 pub use pinger::MockPinger;
 pub use pinger::Pinger;
+pub use port_checker::PortChecker;
 pub use shutdown_error::ShutdownError;
 #[cfg(test)]
 pub use shutdown_server::MockShutdownServer;
 pub use shutdown_server::ShutdownServer;
 pub use ssh2_shutdown_server::Ssh2ShutdownServer;
+pub use tcp_port_checker::TcpPortChecker;
 pub use wake_on_lan_server::WakeOnLanServer;
 #[cfg(test)]
 pub use wakeup_server::MockWakeupServer;
